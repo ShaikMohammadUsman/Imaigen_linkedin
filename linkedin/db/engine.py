@@ -25,6 +25,7 @@ class Database:
         logger.info("Initializing local DB → %s", Path(db_path).name)
         self.engine = create_engine(db_url, connect_args={"check_same_thread": False})
         Base.metadata.create_all(bind=self.engine)
+        self._ensure_columns_exist()
         logger.debug("DB schema ready (tables ensured)")
 
         session_factory = sessionmaker(bind=self.engine)
@@ -39,6 +40,33 @@ class Database:
         self._sync_all_unsynced_profiles()
         self.Session.remove()
         logger.info("DB closed and fully synced with cloud")
+
+    def _ensure_columns_exist(self):
+        """
+        Manually add missing columns if they don't exist in SQLite.
+        Base.metadata.create_all doesn't handle migrations.
+        """
+        from sqlalchemy import inspect, text
+        inspector = inspect(self.engine)
+        columns = [c['name'] for c in inspector.get_columns('profiles')]
+        
+        with self.engine.connect() as conn:
+            if 'last_message' not in columns:
+                logger.info("Adding column 'last_message' to profiles table")
+                conn.execute(text("ALTER TABLE profiles ADD COLUMN last_message TEXT"))
+                conn.commit()
+            if 'last_message_at' not in columns:
+                logger.info("Adding column 'last_message_at' to profiles table")
+                conn.execute(text("ALTER TABLE profiles ADD COLUMN last_message_at DATETIME"))
+                conn.commit()
+            if 'last_received_message' not in columns:
+                logger.info("Adding column 'last_received_message' to profiles table")
+                conn.execute(text("ALTER TABLE profiles ADD COLUMN last_received_message TEXT"))
+                conn.commit()
+            if 'last_received_at' not in columns:
+                logger.info("Adding column 'last_received_at' to profiles table")
+                conn.execute(text("ALTER TABLE profiles ADD COLUMN last_received_at DATETIME"))
+                conn.commit()
 
     def _sync_all_unsynced_profiles(self):
         with self.get_session() as db_session:

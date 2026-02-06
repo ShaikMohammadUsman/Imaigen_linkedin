@@ -23,6 +23,7 @@ def process_profile_row(
         session: "AccountSession",
         simple_profile: dict,
         perform_connections=True,
+        enrich_only: bool = False,
 ):
     from linkedin.actions.connect import send_connection_request
     from linkedin.actions.message import send_follow_up_message
@@ -34,7 +35,13 @@ def process_profile_row(
 
     if profile_row:
         current_state = ProfileState(profile_row.state)
-        profile = profile_row.profile or simple_profile
+        profile = profile_row.profile or simple_profile.copy()
+        
+        # Ensure metadata (Role, Company, Link, Location, Compensation) is available
+        for key in ["role_name", "company_name", "app_link", "location", "compensation"]:
+            if key not in profile and key in simple_profile:
+                profile[key] = simple_profile[key]
+                
     else:
         current_state = ProfileState.DISCOVERED
         profile = simple_profile
@@ -53,22 +60,39 @@ def process_profile_row(
             else:
                 new_state = ProfileState.ENRICHED
                 save_scraped_profile(session, url, profile, data)
+                
+                if enrich_only:
+                    logger.info(f"✨ Enriched {public_identifier}. Stopping (Enrich Mode).")
+                    set_profile_state(session, public_identifier, new_state.value)
+                    return None
 
         case ProfileState.ENRICHED:
+            if enrich_only:
+                logger.info(f"Skipping {public_identifier} (Already Enriched & Enrich Mode ON)")
+                return None
+                
             if not perform_connections:
                 return None
             new_state = send_connection_request(handle=handle, profile=profile)
             profile = None if new_state != ProfileState.CONNECTED else profile
         case ProfileState.PENDING:
+            if enrich_only: return None
             new_state = get_connection_status(session, profile)
             profile = None if new_state != ProfileState.CONNECTED else profile
+            session.wait(long_pause=True)  # <-- Pacing delay after checking status
         case ProfileState.CONNECTED:
-            status = send_follow_up_message(
+            if enrich_only: return None
+            from linkedin.db.profiles import save_message_sent
+            status, msg_text = send_follow_up_message(
                 handle=handle,
                 profile=profile,
             )
             new_state = message_status_to_state.get(status, ProfileState.CONNECTED)
             profile = None if status != MessageStatus.SENT else profile
+            
+            if status == MessageStatus.SENT:
+                save_message_sent(session, public_identifier, msg_text)
+                session.wait(long_pause=True)  # <-- IMPORTANT: Long pause after sending message
 
         case _:
             raise TerminalStateError(f"Profile {public_identifier} is {current_state}")
@@ -78,9 +102,16 @@ def process_profile_row(
     return profile
 
 
-def process_profiles(handle, session, profiles: list[dict]):
+def process_profiles(handle, session, profiles: list[dict], enrich_only: bool = False, limit: int = 20):
     perform_connections = True
+    MAX_ACTIONS = limit
+    actions_count = 0 
+
     for simple_profile in profiles:
+        if actions_count >= MAX_ACTIONS:
+            logger.info(colored(f"🛑 Daily limit reached ({MAX_ACTIONS} actions). Stopping for today.", "red", attrs=["bold"]))
+            break
+
         continue_same_profile = True
         while continue_same_profile:
             try:
@@ -89,7 +120,19 @@ def process_profiles(handle, session, profiles: list[dict]):
                     session=session,
                     simple_profile=simple_profile,
                     perform_connections=perform_connections,
+                    enrich_only=enrich_only,
                 )
+                
+                # If we successfully processed a profile (sent invite or message), increment count
+                # Scrape is also an action!
+                if profile is None and enrich_only:
+                     actions_count += 1
+                     logger.info(f"Action count: {actions_count}/{MAX_ACTIONS}")
+
+                if profile: 
+                    actions_count += 1
+                    logger.info(f"Action count: {actions_count}/{MAX_ACTIONS}")
+
                 continue_same_profile = bool(profile)
             except SkipProfile as e:
                 public_identifier = simple_profile["public_identifier"]

@@ -26,3 +26,11 @@ class Profile(Base):
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now(), nullable=False)
 
     state = Column(String, nullable=False, default="discovered")
+    
+    # Messaging history (Outgoing)
+    last_message = Column(String, nullable=True)
+    last_message_at = Column(DateTime, nullable=True)
+
+    # Messaging history (Incoming)
+    last_received_message = Column(String, nullable=True)
+    last_received_at = Column(DateTime, nullable=True)

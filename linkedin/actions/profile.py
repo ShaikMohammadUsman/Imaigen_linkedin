@@ -25,11 +25,17 @@ def scrape_profile(handle: str, profile: dict):
     api = PlaywrightLinkedinAPI(session=session)
 
     logger.info("Enriching profile → %s", url)
-    profile, data = api.get_profile(profile_url=url)
+    enriched_profile, data = api.get_profile(profile_url=url)
 
-    logger.info("Profile enriched – %s", profile.get("public_identifier")) if profile else None
+    if enriched_profile:
+        # Preserve input metadata (Role Tag, Company, etc) so it stays constant in the CRM
+        for key in ["role_name", "company_name", "app_link", "location", "compensation", "job_id"]:
+             if key in profile and key not in enriched_profile:
+                 enriched_profile[key] = profile[key]
 
-    return profile, data
+    logger.info("Profile enriched – %s", enriched_profile.get("public_identifier")) if enriched_profile else None
+
+    return enriched_profile, data
 
 
 def _save_profile_to_fixture(enriched_profile: Dict[str, Any], path: str | Path) -> None:

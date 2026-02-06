@@ -16,6 +16,12 @@ load_dotenv()
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 AI_MODEL = os.getenv("AI_MODEL", "gpt-4o-mini")
 
+# Azure OpenAI Config
+AZURE_OPENAI_KEY = os.getenv("AZURE_OPENAI_KEY")
+AZURE_OPENAI_ENDPOINT = os.getenv("AZURE_OPENAI_ENDPOINT")
+AZURE_DEPLOYMENT_NAME = os.getenv("AZURE_DEPLOYMENT_NAME")
+AZURE_API_VERSION = os.getenv("AZURE_API_VERSION")
+
 # ----------------------------------------------------------------------
 # Paths (all under assets/)
 # ----------------------------------------------------------------------
@@ -32,8 +38,11 @@ FIXTURE_DIR = ROOT_DIR / "tests" / "fixtures"
 FIXTURE_PROFILES_DIR = FIXTURE_DIR / "profiles"
 FIXTURE_PAGES_DIR = FIXTURE_DIR / "pages"
 
-MIN_DELAY = 5
-MAX_DELAY = 8
+MIN_DELAY = 45  # Profile-to-Profile delay (safe)
+MAX_DELAY = 120
+
+MIN_UI_DELAY = 1.5  # Button clicks, small steps
+MAX_UI_DELAY = 4.0
 
 OPPORTUNISTIC_SCRAPING = False
 

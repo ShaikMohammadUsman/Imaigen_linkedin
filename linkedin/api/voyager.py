@@ -67,6 +67,8 @@ class LinkedInProfile:
 
     positions: List[Position] = field(default_factory=list)
     educations: List[Education] = field(default_factory=list)
+    skills: List[str] = field(default_factory=list)
+    profile_picture: Optional[str] = None
 
     connection_distance: Optional[ConnectionDistance] = None
     connection_degree: Optional[int] = None
@@ -236,12 +238,41 @@ def parse_linkedin_voyager_response(
                 if edu:
                     educations.append(_enrich_education(edu, urn_map))
 
+    # Build Skills
+    skills: List[str] = []
+    skills_urn = profile_entity.get("*profileSkills")
+    if skills_urn:
+        skills_resp = urn_map.get(skills_urn)
+        if skills_resp and skills_resp.get("*elements"):
+            for skill_urn in skills_resp["*elements"]:
+                skill_entity = urn_map.get(skill_urn)
+                if skill_entity:
+                    name = skill_entity.get("name")
+                    if name:
+                        skills.append(name)
+
+    # Profile Picture Extraction
+    profile_picture = None
+    display_image_urn = profile_entity.get("displayImage")
+    if display_image_urn:
+        img_resp = urn_map.get(display_image_urn)
+        if img_resp:
+            root_url = img_resp.get("rootUrl", "")
+            artifacts = img_resp.get("artifacts", [])
+            if artifacts:
+                # Prefer the largest artifact
+                best_artifact = artifacts[-1]
+                path = best_artifact.get("fileIdentifyingNodePathSegment", "")
+                if root_url and path:
+                    from urllib.parse import urljoin
+                    profile_picture = urljoin(root_url, path)
+
     # Assemble data for dataclass validation
     profile_data = {
-        "urn": profile_entity["entityUrn"],
+        "urn": profile_entity.get("entityUrn"),
         "first_name": first_name,
         "last_name": last_name,
-        "full_name": f"{first_name} {last_name}".strip() or None,
+        "full_name": f"{first_name} {last_name}".strip(),
         "headline": profile_entity.get("headline"),
         "summary": profile_entity.get("summary"),
         "public_identifier": profile_entity.get("publicIdentifier"),
@@ -249,8 +280,10 @@ def parse_linkedin_voyager_response(
         "geo": _resolve_star_field(profile_entity, urn_map, "*geo"),
         "industry": _resolve_star_field(profile_entity, urn_map, "*industry"),
         "url": f"https://www.linkedin.com/in/{profile_entity.get('publicIdentifier', '')}/",
-        "positions": positions,
-        "educations": educations,
+        "positions": [asdict(p) for p in positions],
+        "educations": [asdict(e) for e in educations],
+        "skills": skills,
+        "profile_picture": profile_picture,
         "connection_distance": connection_distance,
         "connection_degree": connection_degree,
     }

@@ -41,6 +41,9 @@ def save_scraped_profile(
         profile: Dict[str, Any],
         data: Optional[Dict[str, Any]] = None,
 ):
+    from linkedin.conf import ASSETS_DIR
+    import csv 
+
     public_id = url_to_public_id(url)
     if not public_id:
         logger.warning(f"Invalid LinkedIn URL, cannot save profile: {url}")
@@ -70,6 +73,50 @@ def save_scraped_profile(
     debug_profile_preview(profile) if logger.isEnabledFor(logging.DEBUG) else None
 
     logger.debug(f"SUCCESS: Saved enriched profile → {public_id}")
+    
+    # --- AUTO-SAVE TO CSV ---
+    try:
+        csv_path = ASSETS_DIR / "candidates_detailed.csv"
+        file_exists = csv_path.exists()
+        
+        # Flatten Data
+        # Flatten Data
+        flat_data = {
+            "public_id": public_id,
+            "url": url,
+            "full_name": profile.get("full_name", ""),
+            "headline": profile.get("headline", ""),
+            "location": profile.get("location_name", ""),
+            "summary": profile.get("summary", ""),
+            "about": profile.get("about", ""),
+            "email": profile.get("email", ""),
+            "phone": profile.get("phone", ""),
+            
+            # Extract Current Job (First Item in Experience)
+            "current_company": "",
+            "current_title": "",
+            "job_date_range": ""
+        }
+        
+        experience = profile.get("experience", [])
+        if experience and isinstance(experience, list) and len(experience) > 0:
+            job = experience[0]
+            flat_data["current_company"] = job.get("company", "") or job.get("company_name", "")
+            flat_data["current_title"] = job.get("title", "")
+            flat_data["job_date_range"] = job.get("date_range", "")
+
+        fields = ["public_id", "url", "full_name", "headline", "location", "current_company", "current_title", "job_date_range", "summary", "about", "email", "phone"]
+        
+        with open(csv_path, "a", newline="", encoding="utf-8") as f:
+            writer = csv.DictWriter(f, fieldnames=fields)
+            if not file_exists:
+                writer.writeheader()
+            writer.writerow(flat_data)
+            
+        logger.info(f"✅ Auto-saved enriched profile to CSV: {public_id}")
+        
+    except Exception as e:
+        logger.error(f"Failed to auto-save to CSV: {e}")
 
 
 def get_next_url_to_scrape(session: "AccountSession", limit: int = 1) -> List[str]:
@@ -161,6 +208,30 @@ def set_profile_state(session: "AccountSession", public_identifier, new_state: s
             log_msg = colored("ERROR", "red", attrs=["bold"])
 
     logger.info(f"{public_identifier} {log_msg}")
+
+
+def save_message_sent(session: "AccountSession", public_identifier: str, message: str):
+    db = session.db_session
+    row = db.get(Profile, public_identifier)
+    if row:
+        row.last_message = message
+        row.last_message_at = func.now()
+        row.state = ProfileState.COMPLETED.value
+        db.commit()
+        logger.info(f"✅ Logged message sent to {public_identifier}")
+
+
+def save_received_message(session: "AccountSession", public_identifier: str, message: str):
+    from sqlalchemy import func
+    db = session.db_session
+    row = db.get(Profile, public_identifier)
+    if row:
+        # Avoid overwriting if same message or just updating timestamp
+        if row.last_received_message != message:
+            row.last_received_message = message
+            row.last_received_at = func.now()
+            db.commit()
+            logger.info(f"📩 Logged interaction from {public_identifier}: {message[:30]}...")
 
 
 def debug_profile_preview(enriched):

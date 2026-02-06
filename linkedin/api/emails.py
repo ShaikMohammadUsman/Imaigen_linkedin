@@ -85,7 +85,7 @@ def normalize_boolean(value: Any) -> bool | None:
 
 def ensure_newsletter_subscription(session: AccountSession):
     """One-time newsletter opt-in check and action per campaign run."""
-    cfg = session.account_cfg
+    cfg = session.config
     handle = session.handle
     subscribe_raw = cfg.get("subscribe_newsletter")
     subscribe = normalize_boolean(subscribe_raw)

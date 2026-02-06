@@ -1,12 +1,21 @@
+# Python
 __pycache__/
-.idea/
-.venv/
-.pytest_cache/
-.vscode
-.dockerignore
+*.py[cod]
+*$py.class
+venv/
 .env
 
-/linkedin_state.json
-assets/accounts.secrets.yaml
-assets/cookies/
-assets/data/
+# MacOS
+.DS_Store
+
+# LinkedIn Project Specific
+assets/cookies/*.json
+assets/data/*.db
+assets/screenshots/
+assets/inputs/harvest_state.json
+debug_harvest_page_*.png
+logs/*.log
+
+# IDE
+.idea/
+.vscode/

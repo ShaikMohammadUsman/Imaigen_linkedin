@@ -22,8 +22,8 @@ def send_follow_up_message(
     session = get_session(
         handle=handle,
     )
-    template_file = session.account_cfg["followup_template"]
-    template_type = session.account_cfg["followup_template_type"]
+    template_file = session.config["followup_template"]
+    template_type = session.config["followup_template_type"]
 
     status = get_connection_status(session, profile)
 
@@ -36,12 +36,15 @@ def send_follow_up_message(
     else:
         if template_file:
             message = render_template(session, template_file, template_type, profile)
+        else:
+            logger.error("No followup template found in config.")
+            return MessageStatus.SKIPPED, None
 
         s1 = _send_msg_pop_up(session, profile, message)
         s2 = s1 or _send_message(session, profile, message)
         success = s2
         logger.info(f"Message sent: {message}") if success else None
-        return MessageStatus.SENT if success else MessageStatus.SKIPPED
+        return (MessageStatus.SENT if success else MessageStatus.SKIPPED), message
 
 
 def _send_msg_pop_up(session: "AccountSession", profile: Dict[str, Any], message: str) -> bool:

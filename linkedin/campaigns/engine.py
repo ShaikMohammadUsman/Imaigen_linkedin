@@ -10,9 +10,9 @@ from linkedin.sessions.account import AccountSession
 logger = logging.getLogger(__name__)
 
 
-def start_campaign(handle: str, session: AccountSession, profiles: list[dict]):
+def start_campaign(handle: str, session: AccountSession, profiles: list[dict], enrich_only: bool = False, limit: int = 20):
     session.ensure_browser()
 
     ensure_newsletter_subscription(session)
 
-    process_profiles(handle, session, profiles)
+    process_profiles(handle, session, profiles, enrich_only=enrich_only, limit=limit)

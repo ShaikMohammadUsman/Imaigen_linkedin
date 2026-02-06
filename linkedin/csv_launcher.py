@@ -31,13 +31,18 @@ def load_profiles_df(csv_path: Path | str):
         raise ValueError(f"No URL column found. Available: {list(df.columns)}")
 
     # Clean, dedupe, keep as DataFrame
-    urls_df = (
-        df[[url_column]]
+    # Clean URL column but keep other data
+    df[url_column] = (
+        df[url_column]
         .astype(str)
-        .apply(lambda col: col.str.strip())
+        .str.strip()
+    )
+    
+    urls_df = (
+        df
         .replace({"nan": None, "<NA>": None})
-        .dropna()
-        .drop_duplicates()
+        .dropna(subset=[url_column])
+        .drop_duplicates(subset=[url_column])
     )
 
     # Add public identifier
@@ -90,6 +95,9 @@ def sort_profiles(session: "AccountSession", profiles_df: pd.DataFrame) -> list:
 
 def launch_connect_follow_up_campaign(
         handle: Optional[str] = None,
+        enrich_only: bool = False,
+        limit: int = 20,
+        urls: Optional[list[str]] = None,
 ):
     """
     One-liner to run the connect → follow-up campaign.
@@ -110,12 +118,25 @@ def launch_connect_follow_up_campaign(
         handle=handle,
     )
 
-    input_csv = session.account_cfg['input_csv']
-    logger.info(f"Launching campaign → running as @{handle} | CSV: {input_csv}")
+    input_csv = session.config['input_csv']
+    logger.info(f"Launching campaign → running as @{handle} | CSV: {input_csv} | Enrich Mode: {enrich_only} | Limit: {limit}")
 
     profiles_df = load_profiles_df(input_csv)
+    
+    if urls:
+        # Filter profiles to only include the selected URLs
+        # Normalize URLs for matching
+        from urllib.parse import urlparse
+        def norm(u): 
+            p = urlparse(u)
+            return f"{p.scheme}://{p.netloc}{p.path}".rstrip("/")
+        
+        norm_targets = {norm(u) for u in urls}
+        profiles_df = profiles_df[profiles_df['url'].apply(lambda x: norm(x) in norm_targets)]
+        logger.info(f"Filtered to {len(profiles_df)} selected candidates.")
+
     profiles = sort_profiles(session, profiles_df)
 
     logger.info(f"Loaded {len(profiles):,} profiles from CSV – ready for battle!")
 
-    start_campaign(handle, session, profiles)
+    start_campaign(handle, session, profiles, enrich_only=enrich_only, limit=limit)

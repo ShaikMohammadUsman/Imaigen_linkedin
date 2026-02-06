@@ -1,0 +1,1723 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scooter AI - Outreach</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <!-- Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Poppins', 'sans-serif'],
+                    },
+                    colors: {
+                        scooter: {
+                            bg: '#FFFBF7',       // Light cream background
+                            green: '#2E683A',    // Primary Button Green
+                            greenHover: '#24522e',
+                            orange: '#FF8C66',   // Soft Orange Accent
+                            peach: '#FFCCB3',    // Light Peach
+                            input: '#F0F4FF',    // Light Blue Input Bg
+                            text: '#1F2937',     // Dark Gray Text
+                            lightText: '#6B7280' // Light Gray Text
+                        }
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.5s ease-out',
+                        'slide-up': 'slideUp 0.6s ease-out',
+                        'float': 'float 3s ease-in-out infinite',
+                    },
+                    keyframes: {
+                        fadeIn: {
+                            '0%': { opacity: '0' },
+                            '100%': { opacity: '1' },
+                        },
+                        slideUp: {
+                            '0%': { transform: 'translateY(20px)', opacity: '0' },
+                            '100%': { transform: 'translateY(0)', opacity: '1' },
+                        },
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-10px)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #FFFBF7;
+            color: #1F2937;
+        }
+
+        /* Soft Gradient Blob Background */
+        .blob-bg {
+            position: fixed;
+            top: 0;
+            right: 0;
+            width: 50vw;
+            height: 100vh;
+            background: linear-gradient(135deg, #FFCCB3 0%, #FF8C66 100%);
+            border-bottom-left-radius: 100% 50%;
+            border-top-left-radius: 00% 50%;
+            opacity: 0.15;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        .blob-bg-2 {
+            position: fixed;
+            bottom: -20%;
+            left: -10%;
+            width: 40vw;
+            height: 40vw;
+            background: #E0E7FF;
+            /* Light Lavender */
+            border-radius: 50%;
+            filter: blur(80px);
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        .card-shadow {
+            box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.05);
+        }
+
+        .nav-active {
+            background-color: #F0FDF4;
+            /* Light Green Tint */
+            color: #2E683A;
+            font-weight: 600;
+            border-right: 3px solid #FF8C66;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #CBD5E1;
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94A3B8;
+        }
+    </style>
+</head>
+
+<body class="h-screen flex flex-col overflow-hidden font-sans">
+
+    <!-- Decorative Backgrounds -->
+    <div class="blob-bg"></div>
+    <div class="blob-bg-2"></div>
+
+    <!-- Header -->
+    <header
+        class="h-20 flex items-center justify-between px-8 bg-white/80 backdrop-blur-md border-b border-gray-100 z-10">
+        <div class="flex items-center gap-3 animate-fade-in">
+            <!-- Logo -->
+            <img src="/static/logo.png" alt="Scooter AI Logo"
+                class="w-10 h-10 rounded-xl shadow-md object-cover bg-white">
+            <div>
+                <h1 class="font-bold text-xl text-gray-800 tracking-tight">Scooter AI</h1>
+                <p class="text-xs text-scooter-lightText font-medium">Automated Recruiting</p>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-6">
+            <div id="status-indicator"
+                class="flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-gray-100 shadow-sm text-sm font-medium text-gray-600 transition-all">
+                <span class="w-2.5 h-2.5 rounded-full bg-gray-300 shadow-sm" id="status-dot"></span>
+                <span id="status-text">System Idle</span>
+            </div>
+            <button onclick="stopBot()"
+                class="bg-white hover:bg-red-50 text-red-500 border border-red-100 hover:border-red-200 px-5 py-2 rounded-xl text-sm font-semibold transition-all shadow-sm hover:shadow-md">
+                <i class="fa-solid fa-power-off mr-2"></i> Stop Bot
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="flex flex-1 overflow-hidden">
+
+        <!-- Sidebar -->
+        <div
+            class="w-72 bg-white/50 backdrop-blur-sm border-r border-gray-100 p-6 flex flex-col gap-2 z-10 card-shadow">
+            <div class="mb-8">
+                <label class="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1 mb-2 block">Active
+                    Account</label>
+                <div class="relative group">
+                    <i
+                        class="fa-solid fa-envelope absolute left-3 top-3.5 text-gray-400 group-focus-within:text-scooter-orange transition-colors"></i>
+                    <input type="email" id="handle-input" value="vishnu02.tech@gmail.com"
+                        class="w-full bg-scooter-input border-none rounded-xl pl-10 pr-4 py-3 text-sm font-medium text-gray-700 outline-none focus:ring-2 focus:ring-scooter-peach transition-all shadow-inner">
+                </div>
+            </div>
+
+            <nav class="space-y-2">
+                <button onclick="switchTab('harvest')" id="tab-harvest"
+                    class="nav-active w-full text-left px-5 py-4 rounded-xl flex items-center gap-3 hover:bg-green-50/50 transition-all text-gray-700">
+                    <i class="fa-solid fa-seedling text-lg text-scooter-green"></i>
+                    <span class="text-sm font-bold">Harvest Leads</span>
+                </button>
+                <button onclick="switchTab('queue')" id="tab-queue"
+                    class="w-full text-left px-5 py-4 rounded-xl flex items-center gap-3 hover:bg-orange-50/50 transition-all text-gray-700">
+                    <i class="fa-solid fa-list-check text-lg text-scooter-orange"></i>
+                    <span class="text-sm font-bold">Review Queue</span>
+                    <span id="queue-badge"
+                        class="hidden bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full ml-auto">0</span>
+                </button>
+                <button onclick="switchTab('campaign')" id="tab-campaign"
+                    class="w-full text-left px-5 py-4 rounded-xl flex items-center gap-3 hover:bg-blue-50/50 transition-all text-gray-700">
+                    <i class="fa-solid fa-paper-plane text-lg text-blue-500"></i>
+                    <span class="text-sm font-bold">Manage Campaign</span>
+                </button>
+                <button onclick="switchTab('results')" id="tab-results"
+                    class="w-full text-left px-5 py-4 rounded-xl flex items-center gap-3 hover:bg-green-50/50 transition-all text-gray-700">
+                    <i class="fa-solid fa-users-viewfinder text-lg text-scooter-green"></i>
+                    <span class="text-sm font-bold">View Candidates</span>
+                </button>
+            </nav>
+
+            <div class="mt-auto">
+                <div
+                    class="bg-gradient-to-br from-scooter-peach to-pink-100 rounded-2xl p-4 relative overflow-hidden group">
+                    <div class="relative z-10">
+                        <h4 class="font-bold text-gray-800 text-sm mb-1">Stay Safe</h4>
+                        <p class="text-xs text-gray-600 leading-relaxed">Limits are active. Scraper is mimicking human
+                            behavior.</p>
+                    </div>
+                    <i
+                        class="fa-solid fa-shield-cat absolute -bottom-2 -right-2 text-6xl text-white opacity-40 transform rotate-12 group-hover:scale-110 transition-transform"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Content Area -->
+        <div class="flex-1 overflow-y-auto p-10 relative">
+
+            <!-- VIEW: HARVEST -->
+            <div id="view-harvest" class="view-section max-w-4xl mx-auto animate-slide-up">
+
+                <div class="mb-8">
+                    <h2 class="text-3xl font-bold text-gray-800 mb-2">Lead Discovery</h2>
+                    <p class="text-gray-500">Find and tag candidates for your open roles.</p>
+                </div>
+
+                <!-- Role Selector Card -->
+                <div class="bg-white rounded-3xl p-8 card-shadow border border-white mb-6 relative overflow-hidden">
+                    <div class="absolute top-0 right-0 w-32 h-32 bg-green-50 rounded-bl-full z-0 opacity-50"></div>
+
+                    <div class="relative z-10 flex justify-between items-end mb-6">
+                        <div>
+                            <span
+                                class="bg-green-100 text-scooter-green text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide">Step
+                                1</span>
+                            <h3 class="text-xl font-bold mt-2 text-gray-800">Select Target Role</h3>
+                        </div>
+                        <button onclick="document.getElementById('role-modal').classList.remove('hidden')"
+                            class="text-scooter-orange font-semibold text-sm hover:underline flex items-center gap-1">
+                            <i class="fa-solid fa-circle-plus"></i> New Role
+                        </button>
+                    </div>
+
+                    <div class="relative">
+                        <i class="fa-solid fa-briefcase absolute left-4 top-4 text-gray-400"></i>
+                        <select id="role-select" onchange="loadRoleData()"
+                            class="w-full bg-scooter-input border-none rounded-xl pl-12 pr-4 py-3.5 text-gray-700 font-medium outline-none focus:ring-2 focus:ring-scooter-green/20 transition-all cursor-pointer appearance-none">
+                            <option value="">-- Choose a Role --</option>
+                        </select>
+                        <i
+                            class="fa-solid fa-chevron-down absolute right-4 top-4 text-gray-400 pointer-events-none"></i>
+                    </div>
+                </div>
+
+                <!-- Harvester Config Card -->
+                <div class="bg-white rounded-3xl p-8 card-shadow border border-white opacity-50 pointer-events-none transition-all"
+                    id="harvest-panel">
+                    <div class="flex items-center gap-3 mb-6">
+                        <span
+                            class="bg-orange-100 text-scooter-orange text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide">Step
+                            2</span>
+                        <h3 class="text-xl font-bold text-gray-800">Configure & Run</h3>
+                    </div>
+
+                    <div class="space-y-6">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Search
+                                URL</label>
+                            <div class="relative group">
+                                <i
+                                    class="fa-solid fa-link absolute left-4 top-3.5 text-gray-400 group-focus-within:text-scooter-green transition-colors"></i>
+                                <input type="text" id="hv-url" placeholder="https://www.linkedin.com/search/results/..."
+                                    class="w-full bg-scooter-input border-none rounded-xl pl-12 pr-4 py-3 text-sm text-gray-600 font-medium outline-none focus:ring-2 focus:ring-scooter-green/20 transition-all">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-6">
+                            <div>
+                                <label
+                                    class="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Hiring
+                                    Company (Client)</label>
+                                <div class="relative group">
+                                    <i
+                                        class="fa-solid fa-building absolute left-4 top-3.5 text-gray-400 group-focus-within:text-scooter-orange transition-colors"></i>
+                                    <input type="text" id="hv-company" placeholder="e.g. Acme Corp"
+                                        class="w-full bg-scooter-input border-none rounded-xl pl-12 pr-4 py-3 text-sm text-gray-700 font-bold outline-none focus:ring-2 focus:ring-scooter-orange/20 transition-all">
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Job
+                                    Link</label>
+                                <div class="relative group">
+                                    <i
+                                        class="fa-solid fa-link absolute left-4 top-3.5 text-gray-400 group-focus-within:text-scooter-orange transition-colors"></i>
+                                    <input type="text" id="hv-link" placeholder="https://..."
+                                        class="w-full bg-scooter-input border-none rounded-xl pl-12 pr-4 py-3 text-sm text-blue-600 font-mono outline-none focus:ring-2 focus:ring-scooter-orange/20 transition-all">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-6">
+                            <div>
+                                <label
+                                    class="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Location</label>
+                                <div class="relative group">
+                                    <i
+                                        class="fa-solid fa-location-dot absolute left-4 top-3.5 text-gray-400 group-focus-within:text-scooter-orange transition-colors"></i>
+                                    <input type="text" id="hv-location" placeholder="e.g. Remote / NYC"
+                                        class="w-full bg-scooter-input border-none rounded-xl pl-12 pr-4 py-3 text-sm text-gray-700 font-bold outline-none focus:ring-2 focus:ring-scooter-orange/20 transition-all">
+                                </div>
+                            </div>
+                            <div>
+                                <label
+                                    class="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Compensation</label>
+                                <div class="relative group">
+                                    <i
+                                        class="fa-solid fa-sack-dollar absolute left-4 top-3.5 text-gray-400 group-focus-within:text-scooter-orange transition-colors"></i>
+                                    <input type="text" id="hv-compensation" placeholder="e.g. $120k - $150k"
+                                        class="w-full bg-scooter-input border-none rounded-xl pl-12 pr-4 py-3 text-sm text-gray-700 font-bold outline-none focus:ring-2 focus:ring-scooter-orange/20 transition-all">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Config Config -->
+                        <div class="grid grid-cols-2 gap-6 pt-2 border-t border-gray-100">
+                            <div>
+                                <label
+                                    class="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Start
+                                    Pg</label>
+                                <input type="number" id="hv-start" value="1" min="1"
+                                    class="w-full bg-scooter-input border-none rounded-xl px-4 py-3 text-sm text-center font-bold text-gray-700 outline-none focus:ring-2 focus:ring-scooter-green/20">
+                            </div>
+                            <div>
+                                <label
+                                    class="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Pages</label>
+                                <input type="number" id="hv-pages" value="5" max="10"
+                                    class="w-full bg-scooter-input border-none rounded-xl px-4 py-3 text-sm text-center font-bold text-gray-700 outline-none focus:ring-2 focus:ring-scooter-green/20">
+                            </div>
+                        </div>
+
+                        <div class="pt-4 flex flex-col gap-2">
+                            <div id="harvest-usage-badge"
+                                class="hidden text-xs text-center font-bold text-yellow-600 bg-yellow-50 py-1 rounded-lg border border-yellow-100">
+                                Usage: 0/25
+                            </div>
+                            <button onclick="startHarvest()"
+                                class="w-full bg-scooter-green hover:bg-scooter-greenHover text-white font-bold py-4 rounded-xl shadow-lg shadow-green-700/20 transform transition-all active:scale-[0.98] flex justify-center gap-3 items-center text-lg">
+                                <i class="fa-solid fa-play"></i> Start Harvesting Matches
+                            </button>
+                        </div>
+
+                        <!-- Harvested Data Review -->
+                        <div class="mt-8 border-t border-gray-100 pt-6">
+                            <div class="flex justify-between items-center mb-4">
+                                <h3 class="text-lg font-bold text-gray-800">Harvested Candidates</h3>
+                                <div class="flex space-x-2">
+                                    <button onclick="loadScrapedData()"
+                                        class="text-xs bg-gray-100 hover:bg-gray-200 px-3 py-1.5 rounded-lg text-gray-600 font-bold transition-colors">
+                                        <i class="fas fa-sync-alt mr-1"></i> Refresh
+                                    </button>
+                                    <a href="/api/download_csv" target="_blank"
+                                        class="text-xs bg-scooter-charcoal hover:bg-black px-3 py-1.5 rounded-lg text-white font-bold flex items-center transition-colors">
+                                        <i class="fas fa-download mr-1"></i> CSV
+                                    </a>
+                                </div>
+                            </div>
+
+                            <div
+                                class="bg-white rounded-xl overflow-hidden border border-gray-100 max-h-64 overflow-y-auto custom-scrollbar shadow-sm">
+                                <table class="w-full text-sm text-left">
+                                    <thead
+                                        class="text-xs uppercase bg-gray-50 text-gray-500 sticky top-0 font-bold tracking-wider">
+                                        <tr>
+                                            <th class="px-4 py-3">Role</th>
+                                            <th class="px-4 py-3">Company</th>
+                                            <th class="px-4 py-3">Location</th>
+                                            <th class="px-4 py-3 text-right">Profile</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="scraped-data-body" class="divide-y divide-gray-100">
+                                        <tr>
+                                            <td colspan="4" class="px-4 py-8 text-center text-gray-400 font-medium">
+                                                Click Refresh to see data</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="mt-3 text-xs text-center text-gray-400 font-medium">
+                                * These candidates will be queued for the messaging campaign.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW: QUEUE -->
+            <div id="view-queue" class="view-section hidden space-y-6 animate-slide-up">
+                <div class="flex justify-between items-center mb-4">
+                    <div>
+                        <h2 class="text-3xl font-bold text-gray-800">Review Candidates</h2>
+                        <p class="text-sm text-gray-500 mt-1">Approve or reject candidates before the campaign starts.
+                        </p>
+                    </div>
+                    <div class="flex gap-3 items-center">
+                        <div class="flex items-center gap-2 bg-gray-50 px-3 py-2 rounded-xl border border-gray-100"
+                            title="Max profiles to process this session">
+                            <span class="text-xs font-bold text-gray-500 uppercase">Limit</span>
+                            <input type="number" id="daily-limit" value="10" min="1" max="80"
+                                class="w-12 bg-transparent text-center font-bold text-gray-700 outline-none text-sm border-b-2 border-gray-200 focus:border-scooter-green transition-colors">
+                        </div>
+
+                        <label
+                            class="flex items-center space-x-2 bg-blue-50 px-4 py-2 rounded-xl cursor-pointer hover:bg-blue-100 transition-colors border border-blue-100 group select-none">
+                            <input type="checkbox" id="enrich-only"
+                                class="form-checkbox h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
+                            <div class="flex flex-col">
+                                <span class="text-xs font-bold text-blue-800">Enrich Mode</span>
+                                <span class="text-[9px] font-medium text-blue-500 uppercase tracking-wider">No
+                                    Messages</span>
+                            </div>
+                        </label>
+                        <button onclick="launchCampaignAction()"
+                            class="bg-scooter-green hover:bg-scooter-greenHover text-white px-5 py-2.5 rounded-xl text-sm font-semibold transition-all shadow-md active:scale-95 flex items-center">
+                            <i class="fa-solid fa-rocket mr-2"></i> Launch
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Selection Toolbar for Queue -->
+                <div id="queue-selection-toolbar"
+                    class="hidden sticky top-0 z-30 mb-6 flex items-center justify-between bg-gray-900/95 backdrop-blur-md text-white p-4 rounded-2xl shadow-2xl border border-gray-800 animate-in fade-in slide-in-from-top duration-300">
+                    <div class="flex items-center gap-4">
+                        <div class="bg-scooter-green text-white w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm shadow-inner"
+                            id="queue-selection-count">0</div>
+                        <div>
+                            <div class="text-sm font-bold">Candidates Selected</div>
+                            <div class="text-[10px] text-gray-400">Ready for enrichment or messaging</div>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <button onclick="launchCampaignAction()"
+                            class="bg-scooter-green hover:bg-scooter-green/90 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-lg transition-all">
+                            Process Selected
+                        </button>
+                    </div>
+                </div>
+
+                <div
+                    class="bg-white rounded-3xl card-shadow border border-white overflow-hidden flex flex-col h-[60vh]">
+                    <div class="overflow-y-auto flex-1">
+                        <table class="w-full text-left border-collapse">
+                            <thead class="sticky top-0 bg-white z-10 shadow-sm">
+                                <tr class="bg-gray-50/50 border-b border-gray-100">
+                                    <th class="p-4 w-10">
+                                        <input type="checkbox" id="select-all-queue" onchange="toggleQueueSelection()"
+                                            class="w-4 h-4 rounded border-gray-300 text-scooter-green focus:ring-scooter-green">
+                                    </th>
+                                    <th class="p-4 text-xs font-bold text-gray-400 uppercase">Action</th>
+                                    <th class="p-4 text-xs font-bold text-gray-400 uppercase">Profile URL</th>
+                                    <th class="p-4 text-xs font-bold text-gray-400 uppercase">Role Tag</th>
+                                </tr>
+                            </thead>
+                            <tbody id="queue-table-body" class="text-sm text-gray-600 divide-y divide-gray-50">
+                                <!-- Data injected here -->
+                                <tr>
+                                    <td colspan="3" class="p-10 text-center text-gray-400 italic">No candidates in
+                                        queue. Harvest some first!</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div
+                        class="p-4 bg-gray-50 border-t border-gray-100 flex justify-between items-center text-xs text-gray-500">
+                        <span id="queue-count">0 candidates</span>
+                        <button onclick="clearQueue()" class="text-red-400 hover:text-red-600 font-bold">Clear
+                            All</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MODAL: ADD ROLE -->
+            <div id="role-modal"
+                class="hidden fixed inset-0 bg-gray-900/40 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in">
+                <div class="bg-white p-8 rounded-3xl w-full max-w-lg shadow-2xl transform transition-all scale-100">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-2xl font-bold text-gray-800">New Target Role</h3>
+                        <button onclick="document.getElementById('role-modal').classList.add('hidden')"
+                            class="text-gray-400 hover:text-gray-600 transition-colors">
+                            <i class="fa-solid fa-xmark text-xl"></i>
+                        </button>
+                    </div>
+
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Role Name
+                                (Required)</label>
+                            <input type="text" id="new-role-name" placeholder="e.g. Python Backend Dev"
+                                class="w-full bg-scooter-input border-none rounded-xl px-4 py-3 text-gray-700 outline-none focus:ring-2 focus:ring-scooter-green/20">
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Hiring
+                                    Company</label>
+                                <input type="text" id="new-hiring-company" placeholder="e.g. Scooter AI"
+                                    class="w-full bg-scooter-input border-none rounded-xl px-4 py-3 text-gray-700 outline-none focus:ring-2 focus:ring-scooter-green/20">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Job ID
+                                    (Optional)</label>
+                                <input type="text" id="new-role-id" placeholder="for verification"
+                                    class="w-full bg-scooter-input border-none rounded-xl px-4 py-3 text-gray-700 outline-none focus:ring-2 focus:ring-scooter-green/20">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Application Link
+                                (Recommended)</label>
+                            <input type="text" id="new-app-link" placeholder="https://careers.company.com/job/123"
+                                class="w-full bg-scooter-input border-none rounded-xl px-4 py-3 text-gray-700 outline-none focus:ring-2 focus:ring-scooter-green/20 text-sm">
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Location</label>
+                                <input type="text" id="new-location" placeholder="e.g. Remote"
+                                    class="w-full bg-scooter-input border-none rounded-xl px-4 py-3 text-gray-700 outline-none focus:ring-2 focus:ring-scooter-green/20">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Compensation</label>
+                                <input type="text" id="new-compensation" placeholder="e.g. $150k+"
+                                    class="w-full bg-scooter-input border-none rounded-xl px-4 py-3 text-gray-700 outline-none focus:ring-2 focus:ring-scooter-green/20">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">LinkedIn Search
+                                URL</label>
+                            <textarea id="new-role-url" rows="2"
+                                placeholder="Paste the full URL from your browser address bar..."
+                                class="w-full bg-scooter-input border-none rounded-xl px-4 py-3 text-gray-700 text-sm outline-none focus:ring-2 focus:ring-scooter-green/20 resize-none"></textarea>
+                        </div>
+
+                        <div class="flex gap-3 pt-4">
+                            <button onclick="document.getElementById('role-modal').classList.add('hidden')"
+                                class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold py-3 rounded-xl transition-colors">Cancel</button>
+                            <button onclick="saveNewRole()"
+                                class="flex-1 bg-scooter-green hover:bg-scooter-greenHover text-white font-bold py-3 rounded-xl shadow-lg shadow-green-700/20 transition-all">Save
+                                Role</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW: CAMPAIGN -->
+            <div id="view-campaign" class="view-section hidden max-w-3xl mx-auto space-y-8 animate-slide-up">
+
+                <div class="text-center mb-8">
+                    <h2 class="text-3xl font-bold text-gray-800">Campaign Launcher</h2>
+                    <p class="text-gray-500 mt-2">Activate the bot to connect and message your harvested leads.</p>
+                </div>
+
+                <div class="flex gap-6">
+                    <div
+                        class="bg-white p-6 rounded-3xl flex-1 card-shadow border border-white flex items-center justify-between group hover:-translate-y-1 transition-transform duration-300">
+                        <div>
+                            <p class="text-xs font-bold text-gray-400 uppercase tracking-wider">Daily Safety Cap</p>
+                            <h3 class="text-3xl font-bold text-gray-800 mt-1">20</h3>
+                            <p class="text-xs text-scooter-green font-medium mt-1">Actions / Day</p>
+                        </div>
+                        <div
+                            class="w-14 h-14 bg-green-50 rounded-2xl flex items-center justify-center text-scooter-green group-hover:bg-scooter-green group-hover:text-white transition-colors">
+                            <i class="fa-solid fa-shield-halved text-2xl"></i>
+                        </div>
+                    </div>
+
+                    <div
+                        class="bg-white p-6 rounded-3xl flex-1 card-shadow border border-white flex items-center justify-between group hover:-translate-y-1 transition-transform duration-300">
+                        <div>
+                            <p class="text-xs font-bold text-gray-400 uppercase tracking-wider">Human Delay</p>
+                            <h3 class="text-3xl font-bold text-gray-800 mt-1">45s</h3>
+                            <p class="text-xs text-blue-500 font-medium mt-1">Avg. Wait Time</p>
+                        </div>
+                        <div
+                            class="w-14 h-14 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-500 group-hover:bg-blue-500 group-hover:text-white transition-colors">
+                            <i class="fa-solid fa-hourglass-half text-2xl"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div
+                    class="bg-gradient-to-br from-gray-900 to-gray-800 p-10 rounded-[2.5rem] text-center relative overflow-hidden shadow-2xl shadow-gray-400/50">
+                    <div
+                        class="absolute top-0 left-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10">
+                    </div>
+
+                    <div class="relative z-10">
+                        <div
+                            class="w-24 h-24 bg-white/10 backdrop-blur-md rounded-full flex items-center justify-center mx-auto mb-6 animate-float">
+                            <i class="fa-solid fa-rocket text-5xl text-scooter-orange"></i>
+                        </div>
+                        <h2 class="text-2xl font-bold text-white mb-3">Ready for takeoff?</h2>
+                        <p class="text-gray-400 mb-8 max-w-md mx-auto text-sm leading-relaxed">The bot will perform
+                            opportunistic connections and utilize AI to generate personalized messages for your leads.
+                        </p>
+
+                        <button onclick="startCampaign()"
+                            class="bg-scooter-green hover:bg-white hover:text-scooter-green text-white font-bold px-10 py-4 rounded-2xl shadow-lg shadow-black/30 transition-all transform hover:scale-105 active:scale-95 text-lg">
+                            <i class="fa-solid fa-power-off mr-2"></i> Launch Automation
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW: RESULTS -->
+            <div id="view-results" class="view-section hidden space-y-6 animate-slide-up">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
+                    <div>
+                        <h2 class="text-3xl font-bold text-gray-800">Candidate Pool</h2>
+                        <p class="text-sm text-gray-500 mt-1">Real-time status of your outreach efforts.</p>
+                    </div>
+
+                    <div
+                        class="flex flex-wrap items-center gap-3 bg-white p-2 rounded-2xl border border-gray-100 shadow-sm">
+                        <div class="px-3 py-1 bg-gray-50 rounded-lg flex items-center gap-2 border border-gray-100">
+                            <i class="fa-solid fa-filter text-gray-400 text-[10px]"></i>
+                            <select id="filter-role" onchange="filterResults()"
+                                class="bg-transparent border-none text-[11px] font-bold text-gray-600 outline-none cursor-pointer">
+                                <option value="all">All Roles</option>
+                            </select>
+                        </div>
+                        <div class="px-3 py-1 bg-gray-50 rounded-lg flex items-center gap-2 border border-gray-100">
+                            <i class="fa-solid fa-bolt text-gray-400 text-[10px]"></i>
+                            <select id="filter-status" onchange="filterResults()"
+                                class="bg-transparent border-none text-[11px] font-bold text-gray-600 outline-none cursor-pointer">
+                                <option value="all">All Status</option>
+                                <option value="ENRICHED">Enriched</option>
+                                <option value="HARVESTED">Harvested</option>
+                                <option value="PENDING">Pending</option>
+                                <option value="CONNECTED">Connected</option>
+                                <option value="COMPLETED">Completed</option>
+                                <option value="FAILED">Failed</option>
+                            </select>
+                        </div>
+                        <button onclick="loadResults()"
+                            class="bg-scooter-charcoal hover:bg-black text-white px-4 py-2 rounded-xl text-[11px] font-bold transition-all shadow-sm flex items-center gap-2">
+                            <i class="fa-solid fa-rotate text-scooter-green"></i> REFRESH
+                        </button>
+                        <button onclick="checkRepliesNow()"
+                            class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-[11px] font-bold transition-all shadow-sm flex items-center gap-2">
+                            <i class="fa-solid fa-comments"></i> CHECK REPLIES
+                        </button>
+                        <button id="auto-check-toggle" onclick="toggleAutoCheck()"
+                            class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-xl text-[11px] font-bold transition-all shadow-sm flex items-center gap-2">
+                            <i class="fa-solid fa-clock"></i> AUTO-CHECK: OFF
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Selection Actions (Sticky) -->
+                <div id="selection-toolbar"
+                    class="hidden sticky top-4 z-30 mb-6 flex items-center justify-between bg-gray-900/95 backdrop-blur-md text-white p-4 rounded-2xl shadow-2xl border border-gray-800 animate-in fade-in slide-in-from-top duration-300">
+                    <div class="flex items-center gap-4">
+                        <div class="bg-scooter-green text-white w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm shadow-inner"
+                            id="selection-count">0</div>
+                        <div>
+                            <div class="text-sm font-bold">Candidates Selected</div>
+                            <div class="text-[10px] text-gray-400">Ready for enrichment or messaging</div>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <button onclick="processSelected(true)"
+                            class="bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-xl text-xs font-bold transition-all border border-white/10">
+                            Enrich Selected
+                        </button>
+                        <button onclick="processSelected(false)"
+                            class="bg-scooter-green hover:bg-scooter-green/90 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-lg transition-all">
+                            Launch Outreach
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Daily Limit Warning -->
+                <div id="limit-warning"
+                    class="hidden bg-orange-50 border border-orange-100 p-4 rounded-2xl flex items-center gap-4 text-orange-700">
+                    <div
+                        class="w-10 h-10 bg-white rounded-xl flex items-center justify-center border border-orange-200 shadow-sm animate-pulse">
+                        <i class="fa-solid fa-triangle-exclamation text-orange-500"></i>
+                    </div>
+                    <div>
+                        <div class="text-xs font-bold uppercase tracking-wider mb-0.5">Safety Limit Alert</div>
+                        <div class="text-xs opacity-80">You've reached your safe daily limit (10 actions). Automation is
+                            paused to protect your account.</div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-3xl card-shadow border border-white overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-gray-50/50 border-b border-gray-100">
+                                    <th class="p-4 bg-gray-50/50 w-10">
+                                        <input type="checkbox" id="select-all-candidates"
+                                            onchange="toggleAllSelection()"
+                                            class="w-4 h-4 rounded border-gray-300 text-scooter-green focus:ring-scooter-green">
+                                    </th>
+                                    <th
+                                        class="p-4 text-xs font-black text-scooter-green uppercase tracking-widest w-1/4 bg-green-50/50">
+                                        Candidate</th>
+                                    <th
+                                        class="p-4 text-xs font-black text-scooter-orange uppercase tracking-widest w-1/4 bg-orange-50/50">
+                                        Context</th>
+                                    <th
+                                        class="p-4 text-xs font-black text-blue-600 uppercase tracking-widest w-1/4 bg-blue-50/50">
+                                        Experience & Skills</th>
+                                    <th
+                                        class="p-4 text-xs font-black text-gray-500 uppercase tracking-widest text-right bg-gray-50/50">
+                                        Actions</th>
+                                    <th
+                                        class="p-4 text-xs font-black text-gray-500 uppercase tracking-widest text-right bg-gray-50/50">
+                                        Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="results-table-body" class="text-sm text-gray-600 divide-y divide-gray-50">
+                                <!-- Data injected here -->
+                                <tr>
+                                    <td colspan="6" class="p-10 text-center text-gray-400 italic">No data loaded yet.
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Terminal Log Panel (Floating) -->
+        <div
+            class="absolute bottom-6 right-6 w-96 bg-gray-900/95 backdrop-blur-md rounded-2xl shadow-2xl border border-gray-800 overflow-hidden flex flex-col transition-all transform translate-y-[85%] hover:translate-y-0 group z-50">
+            <div class="h-10 bg-gray-800/50 flex items-center justify-between px-4 cursor-pointer">
+                <div class="flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-red-500"></span>
+                    <span class="w-2 h-2 rounded-full bg-yellow-500"></span>
+                    <span class="w-2 h-2 rounded-full bg-green-500"></span>
+                    <span class="text-xs font-mono text-gray-400 ml-2">Terminal Output</span>
+                </div>
+                <i class="fa-solid fa-chevron-up text-gray-500 text-xs group-hover:rotate-180 transition-transform"></i>
+            </div>
+            <div id="logs" class="h-64 log-box p-4 overflow-y-auto text-green-400 space-y-1 text-xs">
+                <div class="opacity-50 text-gray-500">System initialized. Waiting for commands...</div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Logic -->
+    <script>
+        // State
+        let currentTab = 'harvest';
+        let eventSource = null;
+        let rolesData = [];
+
+        // UI Switcher
+        function switchTab(tab) {
+            document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
+            document.getElementById(`view-${tab}`).classList.remove('hidden');
+
+            document.querySelectorAll('nav button').forEach(el => {
+                el.classList.remove('nav-active');
+                el.classList.add('hover:bg-green-50/50', 'text-gray-600');
+            });
+
+            const activeBtn = document.getElementById(`tab-${tab}`);
+            activeBtn.classList.add('nav-active');
+            activeBtn.classList.remove('text-gray-600', 'hover:bg-green-50/50');
+
+            if (tab === 'results') loadResults();
+            if (tab === 'queue') loadQueue();
+        }
+
+        // --- ROLES LOGIC ---
+        async function loadRoleSelector() {
+            try {
+                const res = await fetch('/api/roles');
+                rolesData = await res.json();
+
+                const select = document.getElementById('role-select');
+                select.innerHTML = '<option value="">-- Choose a Role --</option>';
+
+                rolesData.forEach((role, idx) => {
+                    const opt = document.createElement('option');
+                    opt.value = idx;
+                    opt.textContent = role.name;
+                    select.appendChild(opt);
+                });
+            } catch (e) { console.error(e); }
+        }
+
+        async function loadRoleData() {
+            const idx = document.getElementById('role-select').value;
+            const panel = document.getElementById('harvest-panel');
+
+            if (idx === "") {
+                panel.classList.add('opacity-50', 'pointer-events-none');
+                document.getElementById('hv-url').value = '';
+                document.getElementById('hv-company').value = '';
+                document.getElementById('hv-link').value = '';
+                document.getElementById('hv-location').value = '';
+                document.getElementById('hv-compensation').value = '';
+                return;
+            }
+
+            const role = rolesData[idx];
+            document.getElementById('hv-url').value = role.search_url || "";
+            document.getElementById('hv-company').value = role.company_name || "";
+            document.getElementById('hv-link').value = role.application_link || "";
+            document.getElementById('hv-location').value = role.location || "";
+            document.getElementById('hv-compensation').value = role.compensation || "";
+
+            panel.classList.remove('opacity-50', 'pointer-events-none');
+
+            // Auto-Resume: Check saved state
+            try {
+                const res = await fetch('/api/harvest_state');
+                const state = await res.json();
+                const key = `${role.name}|${role.company_name}`;
+                if (state[key]) {
+                    const nextLimit = state[key] + 1;
+                    document.getElementById('hv-start').value = nextLimit;
+
+                    // Simple Toast
+                    const oldText = document.querySelector('h2').innerText;
+                    document.querySelector('h2').innerText = `Resume: Page ${nextLimit}`;
+                    setTimeout(() => document.querySelector('h2').innerText = 'Harvest Candidates', 2000);
+                } else {
+                    document.getElementById('hv-start').value = 1;
+                }
+            } catch (e) {
+                console.error("Error loading harvest state", e);
+            }
+        }
+
+        async function saveNewRole() {
+            const name = document.getElementById('new-role-name').value;
+            const jid = document.getElementById('new-role-id').value;
+            const company = document.getElementById('new-hiring-company').value;
+            const link = document.getElementById('new-app-link').value;
+            const loc = document.getElementById('new-location').value;
+            const comp = document.getElementById('new-compensation').value;
+            const url = document.getElementById('new-role-url').value;
+
+            if (!name) return alert("Role Name is required");
+
+            await fetch('/api/roles', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name,
+                    job_id: jid,
+                    search_url: url,
+                    company_name: company,
+                    application_link: link,
+                    location: loc,
+                    compensation: comp
+                })
+            });
+
+            document.getElementById('role-modal').classList.add('hidden');
+            loadRoleSelector();
+        }
+
+
+        // Logger Connection
+        function connectLogs() {
+            if (eventSource) return;
+            eventSource = new EventSource('/api/logs');
+            eventSource.onmessage = function (event) {
+                const logs = document.getElementById('logs');
+                const div = document.createElement('div');
+                div.textContent = `> ${event.data}`;
+                logs.appendChild(div);
+                logs.scrollTop = logs.scrollHeight;
+
+                // Auto-expand logs on activity if hidden
+                // document.querySelector('.group').classList.remove('translate-y-[85%]');
+            };
+        }
+
+        async function startHarvest() {
+            const handle = document.getElementById('handle-input').value;
+            const url = document.getElementById('hv-url').value;
+
+            // Read directly from UI inputs (allows live editing)
+            const company = document.getElementById('hv-company').value;
+            const link = document.getElementById('hv-link').value;
+            const loc = document.getElementById('hv-location').value;
+            const comp = document.getElementById('hv-compensation').value;
+
+            // const jobid = document.getElementById('hv-jobid').value;
+            const start = document.getElementById('hv-start').value;
+            const pages = document.getElementById('hv-pages').value;
+
+            // Get simple role name from selection logic 
+            const idx = document.getElementById('role-select').value;
+            let roleName = "", jobid = "";
+            if (idx !== "") {
+                roleName = rolesData[idx].name;
+                jobid = rolesData[idx].job_id || "";
+            }
+
+            if (!url) return alert('Enter a URL!');
+            if (!company) return alert('Enter Hiring Company (Client Name)');
+
+            setStatus('Running...', 'bg-scooter-orange');
+
+            const query = new URLSearchParams({
+                handle,
+                search_url: url,
+                job_id: jobid,
+                role_name: roleName,
+                company_name: company,
+                app_link: link,
+                location: loc, // New
+                compensation: comp, // New
+                start_page: start,
+                pages
+            });
+
+            await fetch(`/api/harvest?${query.toString()}`, { method: 'POST' });
+            connectLogs();
+        }
+
+        async function startCampaign() {
+            const handle = document.getElementById('handle-input').value;
+            setStatus('Bot Active', 'bg-scooter-green');
+            await fetch(`/api/campaign?handle=${handle}`, { method: 'POST' });
+            connectLogs();
+        }
+
+        async function stopBot() {
+            await fetch('/api/stop', { method: 'POST' });
+            setStatus('Stopping...', 'bg-red-500');
+            setTimeout(() => setStatus('System Idle', 'bg-gray-300'), 3000);
+        }
+
+        function setStatus(text, colorClass) {
+            document.getElementById('status-text').textContent = text;
+            const dot = document.getElementById('status-dot');
+            dot.className = `w-2.5 h-2.5 rounded-full ${colorClass}`;
+        }
+
+        // --- QUEUE LOGIC ---
+        let queueData = [];
+
+        async function loadQueue() {
+            const handle = document.getElementById('handle-input').value;
+            const res = await fetch(`/api/queue?handle=${handle || ''}`);
+            queueData = await res.json();
+            renderQueue();
+
+            const badge = document.getElementById('queue-badge');
+            if (queueData.length > 0) {
+                badge.textContent = queueData.length;
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+            }
+        }
+
+        function renderQueue() {
+            const tbody = document.getElementById('queue-table-body');
+            tbody.innerHTML = '';
+
+            // Calculate stats
+            const limitInput = document.getElementById('daily-limit');
+            const limit = limitInput ? (parseInt(limitInput.value) || 10) : 10;
+            const remaining = Math.max(0, queueData.length - limit);
+
+            const roles = {};
+            queueData.forEach(r => {
+                const tag = r.role_name || 'Generic';
+                roles[tag] = (roles[tag] || 0) + 1;
+            });
+            const roleTags = Object.entries(roles).map(([k, v]) =>
+                `<span class="bg-gray-100 text-gray-500 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider mr-2 border border-gray-200">${k}: ${v}</span>`
+            ).join('');
+
+            const countDiv = document.getElementById('queue-count');
+            if (countDiv) {
+                countDiv.innerHTML = `
+                    <div class="flex flex-col gap-1.5 w-full">
+                        <div class="flex items-center justify-between w-full">
+                             <div class="flex items-center gap-3">
+                                 <span class="font-bold text-gray-700">${queueData.length} Total</span>
+                                 <span class="text-xs text-gray-400">|</span>
+                                 <span class="text-green-600 font-bold bg-green-50 px-2 py-0.5 rounded text-xs">Processing: ${Math.min(queueData.length, limit)}</span>
+                                 ${remaining > 0 ? `<span class="text-orange-400 font-bold bg-orange-50 px-2 py-0.5 rounded text-xs">Queued for later: ${remaining}</span>` : ''}
+                             </div>
+                             <button onclick="clearQueue()" class="text-red-400 hover:text-red-600 font-bold text-xs uppercase tracking-wider">Clear All</button>
+                        </div>
+                        <div class="flex flex-wrap gap-y-1 items-center"><span class="text-[10px] text-gray-400 mr-2 uppercase font-bold">Breakdown:</span>${roleTags}</div>
+                    </div>
+                `;
+            }
+
+            if (queueData.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" class="p-10 text-center text-gray-400 italic">No candidates in queue. Harvest some first!</td></tr>';
+                return;
+            }
+
+            queueData.forEach((row, idx) => {
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-gray-50 transition-colors group border-b border-gray-50 last:border-0';
+
+                // Status Logic
+                let statusIcon = '';
+                const s = (row.status || '').toLowerCase();
+                const isEnriched = s === 'enriched' || s === 'completed' || s === 'connected';
+                const isFailed = s === 'failed';
+
+                if (isEnriched) {
+                    statusIcon = `<span class="text-green-600 bg-green-100 rounded-lg w-6 h-6 flex items-center justify-center text-xs shadow-sm" title="Done: ${s}"><i class="fa-solid fa-check"></i></span>`;
+                    tr.classList.add('bg-green-50/40');
+                } else if (isFailed) {
+                    statusIcon = `<span class="text-red-500 bg-red-100 rounded-lg w-6 h-6 flex items-center justify-center text-xs" title="Failed"><i class="fa-solid fa-xmark"></i></span>`;
+                } else {
+                    statusIcon = `<span class="text-gray-300 bg-gray-100 rounded-lg w-6 h-6 flex items-center justify-center text-xs group-hover:bg-white group-hover:shadow-sm transition-all"><i class="fa-regular fa-clock"></i></span>`;
+                }
+
+                // Dim rows that are beyond the limit (unless done)
+                if (idx >= limit && !isEnriched && !isFailed) {
+                    tr.classList.add('opacity-40', 'grayscale');
+                }
+
+                const companyText = row.current_company ? `<span class="text-[10px] text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded border border-gray-200 ml-2 truncate max-w-[150px] inline-block align-middle" title="${row.current_company}"><i class="fa-regular fa-building mr-1"></i>${row.current_company}</span>` : '';
+
+                tr.innerHTML = `
+                    <td class="p-4 w-10">
+                        <input type="checkbox" name="queue-select" value="${row.url}" onchange="updateQueueSelectionUI()" class="w-4 h-4 rounded border-gray-300 text-scooter-green focus:ring-scooter-green cursor-pointer">
+                    </td>
+                    <td class="p-3 w-24">
+                        <div class="flex items-center gap-3">
+                            <button onclick="deleteQueueItem(${idx})" class="text-gray-300 hover:text-red-500 transition-colors p-1 rounded-md hover:bg-red-50">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                            ${statusIcon}
+                        </div>
+                    </td>
+                    <td class="p-3">
+                        <div class="flex flex-col justify-center h-full">
+                            <div class="flex items-center gap-2">
+                                <a href="${row.url}" target="_blank" class="hover:underline text-blue-600 font-bold text-xs truncate max-w-[200px]" title="${row.url}">
+                                     ${row.url.split('/in/')[1]?.replace(/\/$/, '') || 'View Profile'}
+                                </a>
+                                ${companyText}
+                                ${idx >= limit && !isEnriched ? '<span class="text-[9px] text-orange-500 bg-orange-100 px-1.5 rounded font-bold uppercase tracking-wider">Queue</span>' : ''}
+                            </div>
+                            ${row.email ? `<div class="text-[10px] text-gray-500 mt-1 font-mono flex items-center"><i class="fa-solid fa-envelope text-blue-400 mr-1.5"></i>${row.email}</div>` : ''}
+                        </div>
+                    </td>
+                    <td class="p-3 text-gray-500 font-medium text-xs">
+                        <span class="bg-gray-100 text-gray-600 px-2 py-1 rounded-md border border-gray-200">
+                           ${row.role_name || 'Generic'}
+                        </span>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function deleteQueueItem(idx) {
+            queueData.splice(idx, 1);
+            renderQueue();
+            updateQueueSelectionUI();
+        }
+
+        function toggleQueueSelection() {
+            const master = document.getElementById('select-all-queue');
+            const checkboxes = document.getElementsByName('queue-select');
+            checkboxes.forEach(cb => cb.checked = master.checked);
+            updateQueueSelectionUI();
+        }
+
+        function updateQueueSelectionUI() {
+            const checkboxes = document.getElementsByName('queue-select');
+            const selected = Array.from(checkboxes).filter(cb => cb.checked);
+            const toolbar = document.getElementById('queue-selection-toolbar');
+            const count = document.getElementById('queue-selection-count');
+
+            if (selected.length > 0) {
+                toolbar.classList.remove('hidden');
+                count.innerText = selected.length;
+            } else {
+                toolbar.classList.add('hidden');
+                const master = document.getElementById('select-all-queue');
+                if (master) master.checked = false;
+            }
+        }
+
+        function clearQueue() {
+            if (!confirm("Delete ALL candidates from the queue?")) return;
+            queueData = [];
+            renderQueue();
+            const master = document.getElementById('select-all-queue');
+            if (master) master.checked = false;
+            updateQueueSelectionUI();
+        }
+
+        async function saveQueue(silent = false) {
+            await fetch('/api/queue', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(queueData)
+            });
+            if (!silent) {
+                alert('Queue Saved!');
+                loadQueue();
+            }
+        }
+
+        async function loadUsage() {
+            const handle = document.getElementById('handle-input').value;
+            if (!handle) return;
+
+            try {
+                const res = await fetch(`/api/usage?handle=${handle}`);
+                const usage = await res.json();
+
+                // Update Badge in Harvest view
+                const badge = document.getElementById('harvest-usage-badge');
+                if (badge) {
+                    badge.innerHTML = `Daily Usage: ${usage.count}/${usage.limit}`;
+                    badge.classList.remove('hidden');
+                    if (usage.count >= usage.limit) {
+                        badge.classList.remove('bg-yellow-50', 'text-yellow-600', 'border-yellow-100');
+                        badge.classList.add('bg-red-50', 'text-red-600', 'border-red-100');
+                    }
+                }
+
+                // Update Warning in Results view
+                const warning = document.getElementById('limit-warning');
+                if (warning) {
+                    if (usage.count >= usage.limit) {
+                        warning.classList.remove('hidden');
+                        warning.querySelector('.opacity-80').innerText = `You've reached your safe daily limit (${usage.limit} enriched profiles). Automation is paused to protect your account.`;
+                    } else {
+                        warning.classList.add('hidden');
+                    }
+                }
+            } catch (e) {
+                console.error("Failed to load usage:", e);
+            }
+        }
+
+        // Initialize usage on load
+        window.addEventListener('DOMContentLoaded', () => {
+            setTimeout(loadUsage, 1000);
+        });
+
+        async function launchCampaignAction() {
+            const handle = document.getElementById('handle-input').value;
+            if (!handle) { alert("Please enter a LinkedIn Handle"); return; }
+
+            const enrichOnly = document.getElementById('enrich-only').checked;
+            const limit = document.getElementById('daily-limit').value || 10;
+
+            const checkboxes = document.getElementsByName('queue-select');
+            const selectedUrls = Array.from(checkboxes)
+                .filter(cb => cb.checked)
+                .map(cb => cb.value);
+
+            if (queueData.length === 0) {
+                alert("Queue is empty! Harvest some candidates first.");
+                return;
+            }
+
+            let urlsToProcess = null;
+            if (selectedUrls.length > 0) {
+                urlsToProcess = selectedUrls;
+                if (!confirm(`Launch campaign for ${selectedUrls.length} selected candidates?`)) return;
+            } else {
+                if (!confirm(`Launch campaign for ALL ${queueData.length} candidates in queue?`)) return;
+            }
+
+            // Save first (silent)
+            await saveQueue(true);
+
+            // Start Campaign
+            try {
+                // Visual feedback
+                const btn = document.querySelector('button[onclick="launchCampaignAction()"]');
+                if (btn) btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Starting...';
+
+                const body = {
+                    handle: handle,
+                    enrich_only: enrichOnly,
+                    limit: urlsToProcess ? urlsToProcess.length : limit
+                };
+                if (urlsToProcess) body.urls = urlsToProcess;
+
+                const res = await fetch(`/api/campaign`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+                const json = await res.json();
+
+                // Check usage after attempt
+                loadUsage();
+
+                if (json.status === 'started') {
+                    alert(`Campaign Started! Limit: ${limit} actions.\nCheck the Terminal Logs below.`);
+                    // Auto-show logs
+                    const terminal = document.querySelector('.absolute.bottom-6');
+                    terminal.classList.remove('translate-y-[85%]');
+                } else {
+                    alert(`Error: ${json.message}`);
+                }
+
+                if (btn) btn.innerHTML = '<i class="fa-solid fa-rocket mr-2"></i> Launch';
+            } catch (e) {
+                alert("Failed to start campaign: " + e);
+            }
+        }
+
+
+        let allPoolData = [];
+
+        async function loadResults() {
+            const handle = document.getElementById('handle-input').value;
+            const tbody = document.getElementById('results-table-body');
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center py-20 text-gray-400"><i class="fas fa-spinner fa-spin mr-2"></i>Loading Enriched Pool...</td></tr>';
+
+            try {
+                const res = await fetch(`/api/results?handle=${handle}&refresh=true`);
+                const json = await res.json();
+                allPoolData = json.data || [];
+
+                // Populate Role Filter
+                const roleSelect = document.getElementById('filter-role');
+                const roles = [...new Set(allPoolData.map(r => r.Role))].filter(Boolean);
+                roleSelect.innerHTML = '<option value="all">All Roles</option>' +
+                    roles.map(r => `<option value="${r}">${r}</option>`).join('');
+
+                renderResultsTable(allPoolData);
+            } catch (e) {
+                console.error(e);
+                tbody.innerHTML = '<tr><td colspan="6" class="p-10 text-center text-red-500">Error loading data.</td></tr>';
+            }
+        }
+
+        function filterResults() {
+            const role = document.getElementById('filter-role').value;
+            const status = document.getElementById('filter-status').value;
+
+            const filtered = allPoolData.filter(row => {
+                const roleMatch = role === 'all' || row.Role === role;
+                const statusMatch = status === 'all' || row.Status === status;
+                return roleMatch && statusMatch;
+            });
+
+            renderResultsTable(filtered);
+        }
+
+        async function checkRepliesNow() {
+            const handle = document.getElementById('handle-input').value;
+            if (!handle) {
+                alert("Please enter a LinkedIn Handle");
+                return;
+            }
+
+            const btn = event.target;
+            const originalHTML = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Checking...';
+            btn.disabled = true;
+
+            try {
+                const res = await fetch(`/api/check_replies?handle=${encodeURIComponent(handle)}`, { method: 'POST' });
+                const json = await res.json();
+
+                if (json.status === 'started') {
+                    alert('Reply check started! Watch the Terminal Logs below for progress.');
+                    const terminal = document.querySelector('.absolute.bottom-6');
+                    if (terminal) terminal.classList.remove('translate-y-[85%]');
+                    setTimeout(() => loadResults(), 30000);
+                } else {
+                    alert(`Error: ${json.message}`);
+                }
+            } catch (e) {
+                alert("Failed to start reply check: " + e);
+            } finally {
+                btn.innerHTML = originalHTML;
+                btn.disabled = false;
+            }
+        }
+
+        // Auto-check state
+        let autoCheckInterval = null;
+        let autoCheckCountdown = null;
+        let autoCheckEnabled = false;
+        let nextCheckTime = null;
+        const AUTO_CHECK_INTERVAL_MS = 30 * 60 * 1000; // 30 minutes
+
+        function updateCountdown() {
+            if (!autoCheckEnabled || !nextCheckTime) return;
+
+            const now = Date.now();
+            const remaining = nextCheckTime - now;
+
+            if (remaining <= 0) return;
+
+            const minutes = Math.floor(remaining / 60000);
+            const seconds = Math.floor((remaining % 60000) / 1000);
+            const btn = document.getElementById('auto-check-toggle');
+            btn.innerHTML = `<i class="fa-solid fa-clock-rotate-left"></i> NEXT CHECK: ${minutes}m ${seconds}s`;
+        }
+
+        function toggleAutoCheck() {
+            const btn = document.getElementById('auto-check-toggle');
+
+            if (autoCheckEnabled) {
+                // Turn OFF
+                autoCheckEnabled = false;
+                nextCheckTime = null;
+                if (autoCheckInterval) {
+                    clearInterval(autoCheckInterval);
+                    autoCheckInterval = null;
+                }
+                if (autoCheckCountdown) {
+                    clearInterval(autoCheckCountdown);
+                    autoCheckCountdown = null;
+                }
+                btn.innerHTML = '<i class="fa-solid fa-clock"></i> AUTO-CHECK: OFF';
+                btn.classList.remove('bg-green-600', 'hover:bg-green-700');
+                btn.classList.add('bg-gray-600', 'hover:bg-gray-700');
+                console.log('Auto-check disabled');
+            } else {
+                // Turn ON
+                autoCheckEnabled = true;
+                btn.innerHTML = '<i class="fa-solid fa-clock-rotate-left"></i> AUTO-CHECK: ON';
+                btn.classList.remove('bg-gray-600', 'hover:bg-gray-700');
+                btn.classList.add('bg-green-600', 'hover:bg-green-700');
+
+                // Run immediately
+                checkRepliesNow();
+
+                // Set next check time
+                nextCheckTime = Date.now() + AUTO_CHECK_INTERVAL_MS;
+
+                // Start countdown display
+                autoCheckCountdown = setInterval(updateCountdown, 1000);
+
+                // Then run every 30 minutes
+                autoCheckInterval = setInterval(() => {
+                    console.log('Auto-check triggered (30min interval)');
+                    nextCheckTime = Date.now() + AUTO_CHECK_INTERVAL_MS;
+                    checkRepliesNow();
+                }, AUTO_CHECK_INTERVAL_MS);
+
+                console.log('Auto-check enabled - will run every 30 minutes');
+            }
+        }
+
+        function renderResultsTable(data) {
+            const tbody = document.getElementById('results-table-body');
+            tbody.innerHTML = '';
+
+            if (data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="p-20 text-center text-gray-400 italic">No candidates found matching filters.</td></tr>';
+                return;
+            }
+
+            data.forEach(row => {
+                let statusClass = 'bg-gray-50 text-gray-400 border-gray-100';
+                if (row['Status'] === 'COMPLETED') statusClass = 'bg-green-50 text-green-700 border-green-200';
+                else if (row['Status'] === 'CONNECTED') statusClass = 'bg-blue-50 text-blue-700 border-blue-200';
+                else if (row['Status'] === 'PENDING') statusClass = 'bg-yellow-50 text-yellow-700 border-yellow-200';
+                else if (row['Status'] === 'ENRICHED') statusClass = 'bg-scooter-orange/10 text-scooter-orange border-scooter-orange/20';
+                else if (row['Status'] === 'FAILED') statusClass = 'bg-red-50 text-red-700 border-red-200';
+                else if (row['Status'] === 'HARVESTED') statusClass = 'bg-gray-100 text-gray-500 border-gray-200';
+
+                tbody.innerHTML += `
+                <tr class="hover:bg-gray-50/50 transition-colors border-b border-gray-50 last:border-0 group">
+                    <td class="p-4 align-top w-10">
+                        <input type="checkbox" name="candidate-select" value="${row['URL']}" onchange="updateSelectionUI()" class="w-4 h-4 rounded border-gray-300 text-scooter-green focus:ring-scooter-green cursor-pointer">
+                    </td>
+                    <td class="p-4 align-top">
+                        <div class="flex items-start gap-3">
+                            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-gray-100 to-gray-200 flex items-center justify-center overflow-hidden border border-gray-200 shadow-sm shrink-0">
+                                ${row['Picture'] ?
+                        `<img src="${row['Picture']}" class="w-full h-full object-cover" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                     <span class="text-gray-400 font-bold text-lg hidden">${row['Full Name'].charAt(0)}</span>` :
+                        `<span class="text-gray-400 font-bold text-lg">${row['Full Name'].charAt(0)}</span>`
+                    }
+                            </div>
+                            <div class="min-w-0">
+                                <div class="font-bold text-gray-900 text-sm truncate mb-0.5">${row['Full Name']}</div>
+                                <div class="text-[10px] text-gray-500 leading-relaxed line-clamp-2" title="${row['Headline']}">${row['Headline'] || 'Pending...'}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="p-4 align-top">
+                        <div class="space-y-2">
+                             <div class="flex items-center gap-2 text-[10px] font-black text-scooter-orange bg-orange-50 px-2 py-1 rounded-lg border border-orange-100 w-fit uppercase tracking-widest">
+                                <i class="fa-solid fa-bullseye opacity-50"></i> ${row['Role'] || 'Generic'}
+                            </div>
+                            <div class="flex items-center gap-2 text-[10px] font-bold text-gray-700 bg-gray-50 px-2 py-1 rounded-lg border border-gray-100 w-fit">
+                                <i class="fa-solid fa-briefcase text-gray-400"></i> ${row['Current Company'] || '-'}
+                            </div>
+                            <div class="flex items-center gap-2 text-[10px] text-gray-500 bg-gray-50 px-2 py-1 rounded-lg border border-gray-100 w-fit font-medium">
+                                <i class="fa-solid fa-location-dot text-gray-400"></i> ${row['Location'] || '-'}
+                            </div>
+                        </div>
+                    </td>
+                    <td class="p-4 align-top">
+                        <div class="space-y-3">
+                            <div class="space-y-2">
+                                ${Array.isArray(row['Experience']) && row['Experience'].length > 0 ?
+                        row['Experience'].slice(0, 2).map((exp, idx) => `
+                                    <div class="${idx > 0 ? 'pt-2 border-t border-gray-50' : ''}">
+                                        <div class="text-[10px] text-gray-900 font-bold leading-tight">${exp.title}</div>
+                                        <div class="text-[9px] text-scooter-green font-medium">${exp.company}</div>
+                                    </div>
+                                    `).join('')
+                        : '<div class="text-[10px] text-gray-400 italic">No experience data</div>'}
+                            </div>
+                            <div class="flex flex-wrap gap-1 mt-1">
+                                ${row['Skills'] ?
+                        row['Skills'].split(',').slice(0, 4).map(s => `<span class="bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded-[4px] text-[8px] font-black border border-blue-100 uppercase tracking-tighter">${s.trim()}</span>`).join('')
+                        : ''
+                    }
+                            </div>
+                        </div>
+                    </td>
+                    <td class="p-4 text-right align-top">
+                         <div class="flex flex-col items-end gap-2">
+                            <a href="${row['URL']}" target="_blank" class="flex items-center gap-2 text-[9px] font-bold text-gray-400 hover:text-white hover:bg-scooter-green hover:border-scooter-green transition-all bg-white px-2.5 py-1.5 rounded-lg border border-gray-200 shadow-sm uppercase tracking-wider">
+                                View Profile <i class="fa-solid fa-external-link-alt text-[7px]"></i>
+                            </a>
+                            ${row['Email'] ? `<span class="text-[9px] font-mono text-blue-600 bg-blue-50 px-2 py-0.5 rounded border border-blue-100 overflow-hidden text-ellipsis max-w-[140px] font-bold">${row['Email']}</span>` : ''}
+                         </div>
+                    </td>
+                    <td class="p-4 text-right align-top">
+                        <div class="flex flex-col items-end gap-2">
+                             <span class="px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-tighter ${statusClass} border shadow-sm">${row['Status']}</span>
+                             ${row['Last Message'] ? `
+                                <div class="group/msg relative">
+                                    <div class="flex items-center gap-1 text-[8px] font-bold text-scooter-green uppercase tracking-tighter cursor-help bg-green-50 px-2 py-0.5 rounded border border-green-100">
+                                        <i class="fa-solid fa-paper-plane"></i> SENT
+                                    </div>
+                                    <div class="absolute right-0 bottom-full mb-2 w-64 p-3 bg-gray-900 text-white text-[10px] rounded-xl shadow-2xl opacity-0 translate-y-2 group-hover/msg:opacity-100 group-hover/msg:translate-y-0 transition-all pointer-events-none z-50 border border-gray-800 text-left">
+                                        <div class="text-scooter-green font-black mb-1 uppercase tracking-widest text-[8px]">Message Sent:</div>
+                                        <div class="text-gray-300 leading-relaxed font-medium">${row['Last Message']}</div>
+                                        <div class="mt-2 pt-2 border-t border-white/10 text-[8px] text-gray-400 font-bold flex justify-between">
+                                            <span>TIMESTAMP</span>
+                                            <span>${new Date(row['Last Message At']).toLocaleString()}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                             ` : ''}
+                             ${row['Last Received Message'] ? `
+                                <div class="group/reply relative mt-1">
+                                    <div class="flex items-center gap-1 text-[8px] font-bold text-blue-600 uppercase tracking-tighter cursor-help bg-blue-50 px-2 py-0.5 rounded border border-blue-100">
+                                        <i class="fa-solid fa-reply"></i> REPLY
+                                    </div>
+                                    <div class="absolute right-0 bottom-full mb-2 w-64 p-3 bg-gray-900 text-white text-[10px] rounded-xl shadow-2xl opacity-0 translate-y-2 group-hover/reply:opacity-100 group-hover/reply:translate-y-0 transition-all pointer-events-none z-50 border border-gray-800 text-left">
+                                        <div class="text-blue-400 font-black mb-1 uppercase tracking-widest text-[8px]">Incoming Reply:</div>
+                                        <div class="text-gray-300 leading-relaxed font-medium">${row['Last Received Message']}</div>
+                                        <div class="mt-2 pt-2 border-t border-white/10 text-[8px] text-gray-400 font-bold flex justify-between">
+                                            <span>TIMESTAMP</span>
+                                            <span>${new Date(row['Last Received At']).toLocaleString()}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                             ` : ''}
+                        </div>
+                    </td>
+                </tr>
+                `;
+            });
+        }
+
+        function toggleAllSelection() {
+            const master = document.getElementById('select-all-candidates');
+            const checkboxes = document.getElementsByName('candidate-select');
+            checkboxes.forEach(cb => cb.checked = master.checked);
+            updateSelectionUI();
+        }
+
+        function updateSelectionUI() {
+            const checkboxes = document.getElementsByName('candidate-select');
+            const selected = Array.from(checkboxes).filter(cb => cb.checked);
+            const toolbar = document.getElementById('selection-toolbar');
+            const count = document.getElementById('selection-count');
+
+            if (selected.length > 0) {
+                toolbar.classList.remove('hidden');
+                count.innerText = selected.length;
+            } else {
+                toolbar.classList.add('hidden');
+                const master = document.getElementById('select-all-candidates');
+                if (master) master.checked = false;
+            }
+        }
+
+        async function processSelected(enrichOnly = true) {
+            const handle = document.getElementById('handle-input').value;
+            const checkboxes = document.getElementsByName('candidate-select');
+            const selectedUrls = Array.from(checkboxes)
+                .filter(cb => cb.checked)
+                .map(cb => cb.value);
+
+            if (selectedUrls.length === 0) return;
+
+            const mode = enrichOnly ? 'enrichment' : 'outreach';
+            const msg = `Launch ${mode} for ${selectedUrls.length} selected candidates?`;
+            if (!confirm(msg)) return;
+
+            try {
+                const res = await fetch('/api/campaign', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        handle: handle,
+                        enrich_only: enrichOnly,
+                        limit: selectedUrls.length,
+                        urls: selectedUrls
+                    })
+                });
+
+                if (res.ok) {
+                    showLogsTab();
+                }
+            } catch (e) {
+                console.error(e);
+                alert("Failed to start campaign");
+            }
+        }
+
+        function showLogsTab() {
+            const terminal = document.querySelector('.terminal-container');
+            if (terminal) {
+                terminal.style.transform = 'translateY(0)';
+            }
+        }
+
+
+        async function loadScrapedData() {
+            const handle = document.getElementById('handle-input').value;
+            const tbody = document.getElementById('scraped-data-body');
+            tbody.innerHTML = '<tr><td colspan="4" class="text-center py-8 text-gray-400">Loading DB...</td></tr>';
+
+            try {
+                const res = await fetch(`/api/results?handle=${handle || ''}`);
+                const json = await res.json();
+                const data = json.data || [];
+
+                tbody.innerHTML = '';
+
+                if (data.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="4" class="text-center py-8 text-gray-400 italic">No enriched data found yet. Launch a campaign!</td></tr>`;
+                    return;
+                }
+
+                data.forEach(row => {
+                    const isEnriched = row['Status'] !== 'HARVESTED';
+                    const statusClass = isEnriched ? 'bg-blue-50 text-blue-600 border-blue-100' : 'bg-gray-50 text-gray-500 border-gray-100';
+
+                    tbody.innerHTML += `
+                    <tr class="hover:bg-gray-50/50 transition-colors border-b border-gray-50 last:border-0">
+                        <td class="px-4 py-4 align-top">
+                            <div class="flex items-start gap-3">
+                                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-gray-100 to-gray-200 flex items-center justify-center overflow-hidden border border-gray-200 shadow-sm shrink-0">
+                                    ${row['Picture'] ?
+                            `<img src="${row['Picture']}" class="w-full h-full object-cover" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                         <span class="text-gray-500 font-bold text-lg hidden">${row['Full Name'].charAt(0)}</span>` :
+                            `<span class="text-gray-500 font-bold text-lg">${row['Full Name'].charAt(0)}</span>`
+                        }
+                                </div>
+                                <div class="min-w-0">
+                                    <div class="text-[9px] font-bold text-scooter-orange uppercase tracking-wider mb-0.5">${row['Role'] || 'Generic'}</div>
+                                    <div class="font-bold text-gray-900 text-sm flex items-center gap-2 mb-0.5">
+                                        <span class="truncate">${row['Full Name']}</span>
+                                        ${isEnriched ? '<i class="fa-solid fa-circle-check text-blue-400 text-[10px]" title="Verified Profile"></i>' : ''}
+                                    </div>
+                                    <div class="text-[10px] text-gray-500 line-clamp-2 leading-relaxed" title="${row['Headline']}">${row['Headline'] || 'Pending enrichment...'}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-4 py-4 align-top">
+                            <div class="space-y-2">
+                                <div class="flex items-center gap-2 text-[11px] text-gray-700">
+                                    <div class="w-5 h-5 rounded bg-gray-50 flex items-center justify-center border border-gray-100 text-gray-400"><i class="fa-solid fa-briefcase text-[9px]"></i></div>
+                                    <span class="font-bold truncate max-w-[120px]" title="${row['Current Company']}">${row['Current Company'] || '-'}</span>
+                                </div>
+                                <div class="flex items-center gap-2 text-[11px] text-gray-500">
+                                    <div class="w-5 h-5 rounded bg-gray-50 flex items-center justify-center border border-gray-100 text-gray-400"><i class="fa-solid fa-location-dot text-[9px]"></i></div>
+                                    <span class="truncate max-w-[120px]">${row['Location'] || '-'}</span>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-4 py-4 align-top">
+                             <div class="space-y-1.5 flex flex-col">
+                                ${row['Email'] ? `
+                                <div class="flex items-center gap-2 text-[11px] text-blue-600 bg-blue-50 px-2 py-1 rounded border border-blue-100 w-fit">
+                                    <i class="fa-solid fa-envelope text-[9px]"></i>
+                                    <span class="font-mono">${row['Email']}</span>
+                                </div>` : ''}
+                                ${row['Phone'] ? `
+                                <div class="flex items-center gap-2 text-[11px] text-gray-600 bg-gray-50 px-2 py-1 rounded border border-gray-100 w-fit">
+                                    <i class="fa-solid fa-phone text-[9px]"></i>
+                                    <span class="font-mono">${row['Phone']}</span>
+                                </div>` : ''}
+                                ${!row['Email'] && !row['Phone'] ? '<span class="text-[10px] text-gray-400 italic px-1">No contact info yet</span>' : ''}
+                             </div>
+                        </td>
+                        <td class="px-4 py-4 align-top hidden lg:table-cell border-l border-gray-50/50">
+                            <div class="space-y-3 max-w-[450px]">
+                                <div>
+                                    <span class="font-bold text-gray-400 block mb-1.5 uppercase text-[8px] tracking-widest flex items-center gap-1.5">
+                                        <i class="fa-solid fa-history text-[7px]"></i> Experience
+                                    </span>
+                                    <div class="space-y-2">
+                                        ${Array.isArray(row['Experience']) && row['Experience'].length > 0 ?
+                            row['Experience'].slice(0, 2).map(e => `
+                                                <div class="text-[10px] leading-snug">
+                                                    <div class="font-bold text-gray-800">${e.title}</div>
+                                                    <div class="text-gray-500 flex items-center gap-1">
+                                                        <span>${e.company}</span>
+                                                        ${e.dates ? `<span class="text-[8px] opacity-60">• ${e.dates}</span>` : ''}
+                                                    </div>
+                                                </div>
+                                            `).join('') : '<span class="text-gray-300 italic text-[10px]">No experience detailed yet.</span>'
+                        }
+                                        ${Array.isArray(row['Experience']) && row['Experience'].length > 2 ? `<div class="text-[8px] text-blue-400 font-bold">+ ${row['Experience'].length - 2} more roles</div>` : ''}
+                                    </div>
+                                </div>
+                                <div class="pt-1">
+                                    <span class="font-bold text-gray-400 block mb-1.5 uppercase text-[8px] tracking-widest flex items-center gap-1.5">
+                                        <i class="fa-solid fa-star text-[7px]"></i> Key Skills
+                                    </span>
+                                    <div class="flex flex-wrap gap-1">
+                                        ${row['Skills'] ? row['Skills'].split(',').slice(0, 8).map(s => `
+                                            <span class="text-[9px] bg-gray-50 text-gray-600 px-1.5 py-0.5 rounded border border-gray-100">${s.trim()}</span>
+                                        `).join('') : '<span class="text-gray-300 italic text-[10px]">Fetching skills...</span>'}
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-4 py-4 text-right align-top shrink-0">
+                             <div class="flex flex-col items-end gap-3">
+                                <span class="text-[8px] font-black uppercase px-2 py-1 rounded-full ${statusClass} border tracking-tighter shadow-sm">${row['Status']}</span>
+                                <a href="${row['URL']}" target="_blank" class="flex items-center gap-2 text-[10px] font-bold text-gray-400 hover:text-scooter-green transition-all bg-white px-3 py-1.5 rounded-lg border border-gray-100 shadow-sm hover:shadow-md">
+                                    PROFILE <i class="fa-solid fa-external-link-alt text-[9px]"></i>
+                                </a>
+                             </div>
+                        </td>
+                    </tr>
+                `;
+                });
+            } catch (e) {
+                console.error(e);
+                tbody.innerHTML = `<tr><td colspan="4" class="text-center py-8 text-red-400">Error loading data</td></tr>`;
+            }
+        }
+
+        // Init
+        connectLogs();
+        loadRoleSelector();
+        loadQueue();
+        loadScrapedData();
+
+        // Listeners
+        const limitInput = document.getElementById('daily-limit');
+        if (limitInput) limitInput.addEventListener('input', renderQueue);
+
+        async function loadUsage() {
+            const handle = document.getElementById('handle-input').value;
+
+            try {
+                const res = await fetch(`/api/usage?handle=${handle}`);
+                const data = await res.json();
+
+                const badge = document.getElementById('harvest-usage-badge');
+                if (badge) {
+                    badge.innerText = `Usage today: ${data.harvest_pages} / ${data.harvest_limit} search pages`;
+                    badge.classList.remove('hidden');
+
+                    const btn = document.querySelector('button[onclick="startHarvest()"]');
+                    if (data.harvest_pages >= data.harvest_limit) {
+                        badge.classList.remove('text-yellow-600', 'bg-yellow-50');
+                        badge.classList.add('text-red-600', 'bg-red-50');
+                        if (btn) {
+                            btn.disabled = true;
+                            btn.classList.add('opacity-50', 'cursor-not-allowed', 'grayscale');
+                            btn.innerText = 'Daily Limit Reached';
+                        }
+                    } else {
+                        badge.classList.add('text-yellow-600', 'bg-yellow-50');
+                        badge.classList.remove('text-red-600', 'bg-red-50');
+                        if (btn) {
+                            btn.disabled = false;
+                            btn.classList.remove('opacity-50', 'cursor-not-allowed', 'grayscale');
+                            btn.innerHTML = '<i class="fa-solid fa-play"></i> Start Harvesting Matches';
+                        }
+                    }
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        const handleIn = document.getElementById('handle-input');
+        if (handleIn) {
+            handleIn.addEventListener('change', loadQueue);
+            handleIn.addEventListener('blur', loadQueue);
+            handleIn.addEventListener('change', loadUsage);
+            handleIn.addEventListener('blur', loadUsage);
+        }
+
+
+        loadUsage();
+    </script>
+</body>
+
+</html>
