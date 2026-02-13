@@ -99,3 +99,64 @@ class PlaywrightLinkedinAPI:
         data = res.json()
         extracted_info = parse_linkedin_voyager_response(data, public_identifier=public_identifier)
         return extracted_info, data
+
+    def get_company(self, company_urn_or_id: str) -> Optional[dict]:
+        """
+        Fetch company details using the Voyager API.
+        Accepts full URN (urn:li:fsd_company:12345) or just the ID (12345).
+        """
+        if not company_urn_or_id:
+            return None
+
+        # Extract numeric ID if URN is provided
+        company_id = company_urn_or_id.split(':')[-1]
+        
+        # Using the standard organization endpoint without decoration (verified working)
+        base_url = "https://www.linkedin.com/voyager/api"
+        uri = f"/organization/companies/{company_id}"
+        
+        full_url = base_url + uri
+
+        try:
+            res = self.context.request.get(full_url, headers=self.headers)
+            
+            if res.status != 200:
+                logger.warning(f"Company API failed → {company_urn_or_id} (HTTP {res.status})")
+                return None
+                
+            json_data = res.json()
+            data = json_data.get("data", {})
+            included = json_data.get("included", [])
+            
+            # Resolve Industry from Included
+            industry_name = None
+            for item in included:
+                if item.get("$type") == "com.linkedin.voyager.common.Industry":
+                    industry_name = item.get("name")
+                    break
+
+            # Handle affiliated companies
+            affiliated = []
+            if "affiliatedCompanies" in data:
+                # These usually come as a list of URNs or mini-objects
+                # For now, we store the raw resolution if possible or just the list
+                affiliated = data.get("affiliatedCompanies")
+
+            # Basic parsing of the raw response to return a clean dict
+            company_details = {
+                "name": data.get("name"),
+                "description": data.get("description"),
+                "tagline": data.get("tagline"),
+                "url": data.get("websiteUrl"),
+                "industry": industry_name or data.get("industry", {}).get("name"), # Fallback
+                "specialties": data.get("specialties", []),
+                "employee_count": data.get("staffCount"),
+                "headquarters": data.get("headquarters", {}).get("city"),
+                "affiliated_companies": affiliated,
+                "company_type": data.get("companyType", {}).get("localizedName")
+            }
+            return company_details
+            
+        except Exception as e:
+            logger.error(f"Failed to fetch company {company_urn_or_id}: {e}")
+            return None

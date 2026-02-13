@@ -33,6 +33,35 @@ def scrape_profile(handle: str, profile: dict):
              if key in profile and key not in enriched_profile:
                  enriched_profile[key] = profile[key]
 
+        # --- COMPANY ENRICHMENT (New Feature) ---
+        # Fetch detailed info for companies in their work history
+        # We use a cache to avoid re-fetching same company multiple times for one profile
+        company_cache = {}
+        
+        if "positions" in enriched_profile:
+            logger.info(f"Fetching company details for {len(enriched_profile['positions'])} positions...")
+            
+            for pos in enriched_profile["positions"]:
+                urn = pos.get("company_urn")
+                if urn:
+                    # Check cache first
+                    if urn in company_cache:
+                        pos["company_details"] = company_cache[urn]
+                    else:
+                        # Fetch from API
+                        try:
+                            # Extract ID just in case
+                            company_id = urn.split(':')[-1]
+                            details = api.get_company(company_id)
+                            if details:
+                                pos["company_details"] = details
+                                company_cache[urn] = details
+                                logger.debug(f"  + Enriched Company: {details.get('name')}")
+                        except Exception as e:
+                            logger.warning(f"  - Failed to enrich company {urn}: {e}")
+                            
+            logger.info(f"Enriched {len(company_cache)} unique companies.")
+
     logger.info("Profile enriched – %s", enriched_profile.get("public_identifier")) if enriched_profile else None
 
     return enriched_profile, data

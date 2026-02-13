@@ -1,0 +1,15 @@
+playwright
+playwright-stealth
+pydantic
+python-dotenv
+SQLAlchemy
+jsonpath-ng
+pandas
+langchain
+langchain-openai
+jinja2
+termcolor
+fastapi
+uvicorn
+sse-starlette
+psycopg2-binary

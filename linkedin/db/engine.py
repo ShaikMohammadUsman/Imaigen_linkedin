@@ -20,17 +20,36 @@ class Database:
     Sync to cloud happens ONLY when close() is called.
     """
 
-    def __init__(self, db_path: str):
-        db_url = f"sqlite:///{db_path}"
-        logger.info("Initializing local DB → %s", Path(db_path).name)
-        self.engine = create_engine(db_url, connect_args={"check_same_thread": False})
+    def __init__(self, db_path: str = None):
+        import os
+        
+        # Check for Cloud SQL connection string first
+        self.db_url = os.getenv("DATABASE_URL")
+        
+        if self.db_url:
+            logger.info("Initializing remote DB (Cloud SQL)")
+            # Postgres doesn't need check_same_thread
+            self.engine = create_engine(self.db_url)
+        else:
+            # Fallback to local SQLite
+            if not db_path:
+                raise ValueError("db_path required if DATABASE_URL not set")
+                
+            self.db_url = f"sqlite:///{db_path}"
+            logger.info("Initializing local DB → %s", Path(db_path).name)
+            self.engine = create_engine(self.db_url, connect_args={"check_same_thread": False})
+
         Base.metadata.create_all(bind=self.engine)
-        self._ensure_columns_exist()
-        logger.debug("DB schema ready (tables ensured)")
+        
+        # Only run manual column fixes for SQLite or if really needed
+        if "sqlite" in self.db_url:
+            self._ensure_columns_exist()
+            
+        logger.debug("DB schema ready")
 
         session_factory = sessionmaker(bind=self.engine)
         self.Session = scoped_session(session_factory)
-        self.db_path = Path(db_path)
+        self.db_path = Path(db_path) if db_path else None
 
     def get_session(self):
         return self.Session()
