@@ -10,6 +10,9 @@ from ..api.client import PlaywrightLinkedinAPI
 
 logger = logging.getLogger(__name__)
 
+# Global cache to avoid re-fetching company details multiple times during a single run
+_COMPANY_CACHE = {}
+
 
 def scrape_profile(handle: str, profile: dict):
     url = profile["url"]
@@ -33,11 +36,8 @@ def scrape_profile(handle: str, profile: dict):
              if key in profile and key not in enriched_profile:
                  enriched_profile[key] = profile[key]
 
-        # --- COMPANY ENRICHMENT (New Feature) ---
+        # --- COMPANY ENRICHMENT ---
         # Fetch detailed info for companies in their work history
-        # We use a cache to avoid re-fetching same company multiple times for one profile
-        company_cache = {}
-        
         if "positions" in enriched_profile:
             logger.info(f"Fetching company details for {len(enriched_profile['positions'])} positions...")
             
@@ -45,22 +45,25 @@ def scrape_profile(handle: str, profile: dict):
                 urn = pos.get("company_urn")
                 if urn:
                     # Check cache first
-                    if urn in company_cache:
-                        pos["company_details"] = company_cache[urn]
+                    if urn in _COMPANY_CACHE:
+                        pos["company_details"] = _COMPANY_CACHE[urn]
                     else:
                         # Fetch from API
                         try:
+                            # Small randomized delay for stealth before each company API call
+                            session.wait() 
+                            
                             # Extract ID just in case
                             company_id = urn.split(':')[-1]
                             details = api.get_company(company_id)
                             if details:
                                 pos["company_details"] = details
-                                company_cache[urn] = details
+                                _COMPANY_CACHE[urn] = details
                                 logger.debug(f"  + Enriched Company: {details.get('name')}")
                         except Exception as e:
                             logger.warning(f"  - Failed to enrich company {urn}: {e}")
                             
-            logger.info(f"Enriched {len(company_cache)} unique companies.")
+            logger.info(f"Enriched {len(_COMPANY_CACHE)} unique companies globally.")
 
     logger.info("Profile enriched – %s", enriched_profile.get("public_identifier")) if enriched_profile else None
 

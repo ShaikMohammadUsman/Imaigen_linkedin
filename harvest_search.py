@@ -151,7 +151,8 @@ def harvest_search_results(
                 logger.warning(f"⚠️ No results found on page {page_num}. Page might still be loading or selector is failing.")
                 # Log available elements for debugging
                 logger.debug(f"Page URL: {page.url}")
-                logger.debug(f"Page has {len(page.locator('a[href*=\"/in/\"]').all())} total profile links")
+                links_count = len(page.locator('a[href*="/in/"]').all())
+                logger.debug(f"Page has {links_count} total profile links")
         
         logger.info(f"Scanning {count} search result cards.")
 

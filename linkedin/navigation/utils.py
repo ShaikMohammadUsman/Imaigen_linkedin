@@ -29,8 +29,15 @@ def goto_page(session: "AccountSession",
         pass  # we still continue and check URL below
 
     session.wait(to_scrape=to_scrape)
+    
+    current = unquote(page.url).lower()
+    
+    # DETECTOR: Check for security challenges
+    if any(q in current for q in ["/checkpoint/", "/challenge/", "/check/verify"]):
+        from linkedin.navigation.exceptions import DetectionError
+        logger.error(f"🚨 LinkedIn Detection Triggered! Page: {current}")
+        raise DetectionError(f"LinkedIn Security Challenge encountered at {current}")
 
-    current = unquote(page.url)
     if expected_url_pattern not in current:
         raise RuntimeError(f"{error_message} → expected '{expected_url_pattern}' | got '{current}'")
 

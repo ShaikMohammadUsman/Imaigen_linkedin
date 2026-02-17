@@ -13,6 +13,10 @@ assets/cookies/*.json
 assets/data/*.db
 assets/screenshots/
 assets/inputs/harvest_state.json
+assets/accounts.secrets.yaml
+assets/usage_stats.json
+assets/candidates_detailed.csv
+assets/roles.json
 debug_harvest_page_*.png
 logs/*.log
 

@@ -99,21 +99,39 @@ We use **Google Cloud Build** for automated deployments:
 
 ## 🛠️ Developer Workflow
 
-### **Running Locally**
+### **1. Running Locally (Development)**
+Before deploying, always test your changes locally to ensure everything works.
 ```bash
-# 1. Install dependencies
+# Install dependencies (only once)
 pip install -r requirements.txt
 playwright install
 
-# 2. Run the UI Server
+# Run the UI Server
 uvicorn ui_server:app --reload
+# Access Dashboard at: http://localhost:8000
 ```
 
-### **Deploying to Production**
+### **2. Saving Changes (GitHub)**
+Once you are happy with your code changes, save them to the repository:
 ```bash
-# Triggers built-in Cloud Build execution
+git add .
+git commit -m "Describe your changes briefly (e.g. improve scraping logic)"
+git push origin main
+```
+*   This ensures your work is backed up and versioned.
+
+### **3. Deploying to Production (Cloud Run)**
+To update the live bot with your new code, run this **single command**:
+```bash
 gcloud builds submit .
 ```
+*   **What this does**:
+    1.  Builds a new Docker image from your code.
+    2.  Pushes it to Google Artifact Registry.
+    3.  Automatically updates the Cloud Run service (`scooter-bot-service`).
+    4.  Restarts the bot with your latest changes (database connections remain active).
+
+> **Note:** The deployment takes about 2-3 minutes. Wait for the `SUCCESS` message in your terminal before closing it.
 
 ---
 

@@ -92,20 +92,61 @@ def save_scraped_profile(
             "email": profile.get("email", ""),
             "phone": profile.get("phone", ""),
             
-            # Extract Current Job (First Item in Experience)
-            "current_company": "",
-            "current_title": "",
-            "job_date_range": ""
+            # Extract Current Job & Company Details
+            "current_company_name": "",
+            "current_job_title": "",
+            "current_job_date_range": "",
+            "company_description": "",
+            "company_website": "",
+            "company_industry": "",
+            "company_size": "",
+            "company_headquarters": "",
+            "company_specialties": "",
+            
+            "all_positions_summary": "" # Detailed dump of all positions
         }
         
-        experience = profile.get("experience", [])
-        if experience and isinstance(experience, list) and len(experience) > 0:
-            job = experience[0]
-            flat_data["current_company"] = job.get("company", "") or job.get("company_name", "")
-            flat_data["current_title"] = job.get("title", "")
-            flat_data["job_date_range"] = job.get("date_range", "")
+        positions = profile.get("positions", [])
+        if positions and isinstance(positions, list) and len(positions) > 0:
+            current_job = positions[0]
+            flat_data["current_company_name"] = current_job.get("company_name", "")
+            flat_data["current_job_title"] = current_job.get("title", "")
+            
+            # Format Date Range
+            dr = current_job.get("date_range", {})
+            if dr:
+                start = dr.get("start", {})
+                end = dr.get("end", {})
+                start_str = f"{start.get('month', '?')}/{start.get('year', '?')}" if start else "N/A"
+                end_str = f"{end.get('month', '?')}/{end.get('year', '?')}" if end else "Present"
+                flat_data["current_job_date_range"] = f"{start_str} - {end_str}"
 
-        fields = ["public_id", "url", "full_name", "headline", "location", "current_company", "current_title", "job_date_range", "summary", "about", "email", "phone"]
+            # Company Details (if enriched)
+            comp_details = current_job.get("company_details", {})
+            if comp_details:
+                flat_data["company_description"] = comp_details.get("description", "")
+                flat_data["company_website"] = comp_details.get("url", "")
+                flat_data["company_industry"] = comp_details.get("industry", "")
+                flat_data["company_size"] = comp_details.get("employee_count", "")
+                flat_data["company_headquarters"] = comp_details.get("headquarters", "")
+                flat_data["company_specialties"] = ", ".join(comp_details.get("specialties", []))
+
+            # Build All Positions Summary
+            summary_parts = []
+            for p in positions:
+                p_title = p.get("title", "Unknown")
+                p_comp = p.get("company_name", "Unknown")
+                p_desc = p.get("company_details", {}).get("description", "No info available")
+                summary_parts.append(f"[{p_title} @ {p_comp}]: {p_desc}")
+            flat_data["all_positions_summary"] = " | ".join(summary_parts)
+
+        fields = [
+            "public_id", "url", "full_name", "headline", "location", 
+            "current_company_name", "current_job_title", "current_job_date_range",
+            "company_description", "company_website", "company_industry", 
+            "company_size", "company_headquarters", "company_specialties",
+            "summary", "about", "email", "phone", "all_positions_summary"
+        ]
         
         with open(csv_path, "a", newline="", encoding="utf-8") as f:
             writer = csv.DictWriter(f, fieldnames=fields)
@@ -113,7 +154,7 @@ def save_scraped_profile(
                 writer.writeheader()
             writer.writerow(flat_data)
             
-        logger.info(f"✅ Auto-saved enriched profile to CSV: {public_id}")
+        logger.info(f"✅ Auto-saved enriched profile (with company details) to CSV: {public_id}")
         
     except Exception as e:
         logger.error(f"Failed to auto-save to CSV: {e}")

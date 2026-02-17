@@ -84,7 +84,7 @@ async def start_harvest(
         return JSONResponse({"status": "error", "message": "A process is already running."}, status_code=400)
     
     cmd = [
-        "./venv/bin/python", "-u", "harvest_search.py", 
+        "python", "-u", "harvest_search.py", 
         handle, search_url, str(start_page), str(pages), job_id, role_name, company_name, app_link, location, compensation
     ]
     
@@ -128,6 +128,13 @@ def download_csv():
         
     return FileResponse(file_path, media_type='text/csv', filename="harvested_candidates.csv")
 
+@app.get("/api/download_detailed_csv")
+def download_detailed_csv():
+    if not DB_EXPORT_FILE.exists():
+        return JSONResponse({"status": "error", "message": "Detailed report not found. Run enrichment first."}, status_code=404)
+        
+    return FileResponse(DB_EXPORT_FILE, media_type='text/csv', filename="detailed_candidates_report.csv")
+
 # Consolidated with the one below at 434
 
 @app.post("/api/campaign")
@@ -142,7 +149,7 @@ async def start_campaign(req: Request):
     if current_process and current_process.returncode is None:
         return JSONResponse({"status": "error", "message": "A process is already running."}, status_code=400)
     
-    cmd = ["./venv/bin/python", "-u", "main.py", handle]
+    cmd = ["python", "-u", "main.py", handle]
     if enrich_only:
         cmd.append("--enrich-only")
         
@@ -283,10 +290,17 @@ def get_results(handle: str = None, refresh: bool = False):
                 end_str = f"{end.get('month', '') or ''}/{end.get('year', '') or ''}".strip("/") or "Present"
                 dates = f"{start_str} - {end_str}" if start_str else ""
                 
+                details = job.get('company_details') or {}
                 exp_list.append({
                     "title": title,
                     "company": comp,
-                    "dates": dates
+                    "dates": dates,
+                    "company_description": details.get('description') or '',
+                    "company_website": details.get('url') or '',
+                    "company_industry": details.get('industry') or '',
+                    "company_size": details.get('employee_count') or '',
+                    "company_headquarters": details.get('headquarters') or '',
+                    "company_specialties": details.get('specialties') or []
                 })
             
             skills = data.get("skills", [])
@@ -347,7 +361,17 @@ def get_results(handle: str = None, refresh: bool = False):
                 dr = job.get('date_range') or {}
                 start_str = f"{dr.get('start', {}).get('month', '')}/{dr.get('start', {}).get('year', '')}".strip("/")
                 end_str = f"{dr.get('end', {}).get('month', '')}/{dr.get('end', {}).get('year', '')}".strip("/") or "Present"
-                exp_list.append({"title": title, "company": comp, "dates": f"{start_str} - {end_str}" if start_str else ""})
+                details = job.get('company_details') or {}
+                exp_list.append({
+                    "title": title, 
+                    "company": comp, 
+                    "dates": f"{start_str} - {end_str}" if start_str else "",
+                    "company_description": details.get('description') or '',
+                    "company_website": details.get('url') or '',
+                    "company_industry": details.get('industry') or '',
+                    "company_size": details.get('employee_count') or '',
+                    "company_headquarters": details.get('headquarters') or '',
+                })
             
             skills = data.get("skills", [])
             skills_str = ", ".join([str(s) for s in skills[:12]]) if isinstance(skills, list) else ""
@@ -554,7 +578,7 @@ async def check_replies_now(handle: str):
     if current_process and current_process.returncode is None:
         return JSONResponse({"status": "error", "message": "Another process is running."}, status_code=400)
     
-    cmd = ["./venv/bin/python", "-u", "check_replies.py"]
+    cmd = ["python", "-u", "check_replies.py"]
     
     current_process = await asyncio.create_subprocess_exec(
         *cmd,

@@ -15,21 +15,35 @@ logger = logging.getLogger(__name__)
 MIN_API_DELAY = 0.250
 MAX_API_DELAY = 0.500
 
-def human_delay(min_val, max_val):
+def human_delay(min_val, max_val, mode="normal"):
     """
-    Human-like delay with realistic decimal precision.
-    Instead of 5.00s, generates values like 3.27s, 5.81s, 7.43s
+    Advanced human-like delay with Gaussian distribution.
+    - 'normal': Standard jitter
+    - 'burst': Quick succession interactions
+    - 'break': Long distraction pause
     """
-    # Add small random variance to min/max to avoid patterns
-    min_variance = random.uniform(-0.3, 0.3)
-    max_variance = random.uniform(-0.5, 0.5)
+    if mode == "burst":
+        # Quick actions (e.g. clicking through steps)
+        delay = random.gauss((min_val + max_val) / 2, (max_val - min_val) / 4)
+        delay = max(min_val, min(delay, max_val))
+    elif mode == "break":
+        # Coffee break / Reading (2 - 7 minutes)
+        delay = random.uniform(120, 420)
+        logger.info(colored(f"☕ Taking a human 'reading break' for {delay/60:.1f} minutes...", "yellow"))
+    else:
+        # Standard Profile-to-Profile or UI pacing
+        # Use Gaussian centered between min/max
+        mu = (min_val + max_val) / 2
+        sigma = (max_val - min_val) / 6
+        delay = random.gauss(mu, sigma)
+        
+        # Clamp to bounds but allow occasional outliers
+        delay = max(min_val * 0.7, min(delay, max_val * 1.3))
     
-    adjusted_min = max(0.5, min_val + min_variance)
-    adjusted_max = max_val + max_variance
-    
-    delay = random.uniform(adjusted_min, adjusted_max)
-    logger.debug(f"Pause: {delay:.2f}s")
+    logger.debug(f"Stealth Pause: {delay:.2f}s ({mode})")
     time.sleep(delay)
+
+from termcolor import colored
 
 
 class AccountSession:
@@ -48,6 +62,8 @@ class AccountSession:
         # Determine strictness from config?
         # For now defaults
         self.headless = False # self.config.get("headless", True) # Default to visible for debugging
+        self.actions_count = 0 
+        self.burst_limit = random.randint(5, 10) # Randomize when to take a big break
         
     @property
     def db_session(self):
@@ -69,22 +85,31 @@ class AccountSession:
     def wait(self, min_delay=None, max_delay=None, to_scrape=OPPORTUNISTIC_SCRAPING, long_pause=False):
         """
         Smart Wait:
-        - Default: Short UI delay (1.5 - 4s) for natural interactions.
-        - long_pause=True: Long delay (45 - 120s) for pacing between profiles.
+        - Default: Short UI delay for natural interactions.
+        - long_pause=True: Long delay for pacing between profiles.
         """
-        # Determine strict bounds
+        self.actions_count += 1
+        
+        # Determine Mode
+        mode = "normal"
         if long_pause:
-            # Macro delay (between profiles)
+            # Check if it's time for a "Coffee Break"
+            if self.actions_count >= self.burst_limit:
+                mode = "break"
+                self.actions_count = 0
+                self.burst_limit = random.randint(5, 12) # Reset next break
+            
             lower = min_delay or MIN_DELAY
             upper = max_delay or MAX_DELAY
         else:
-            # Micro delay (UI interactions)
+            # UI interactions are faster "bursts"
+            mode = "burst"
             lower = min_delay or MIN_UI_DELAY
             upper = max_delay or MAX_UI_DELAY
 
         if not to_scrape:
-            human_delay(lower, upper)
-            # Safe check for page state, but don't error if it's just a partial update
+            human_delay(lower, upper, mode=mode)
+            # Safe check for page state
             try:
                 self.page.wait_for_load_state("domcontentloaded", timeout=5000) 
             except:
@@ -113,7 +138,7 @@ class AccountSession:
         api = PlaywrightLinkedinAPI(session=self)
 
         for url in urls:
-            human_delay(min_api_delay, max_api_delay)
+            human_delay(min_api_delay, max_api_delay, mode="burst")
             profile, data = api.get_profile(profile_url=url)
             save_scraped_profile(self, url, profile, data)
             logger.debug(f"Auto-scraped → {profile.get('full_name')} – {url}") if profile else None

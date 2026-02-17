@@ -51,10 +51,24 @@ def playwright_login(session: "AccountSession"):
 
 
 def build_playwright(storage_state=None):
-    logger.debug("Launching Playwright")
+    import os
+    is_headless = os.getenv("HEADLESS", "false").lower() == "true"
+    
+    logger.debug(f"Launching Playwright (Headless: {is_headless})")
     playwright = sync_playwright().start()
-    browser = playwright.chromium.launch(headless=False, slow_mo=200)
+    
+    browser = playwright.chromium.launch(
+        headless=is_headless, 
+        slow_mo=200 if not is_headless else None,
+        args=[
+            "--no-sandbox",
+            "--disable-setuid-sandbox",
+            "--disable-dev-shm-usage",
+            "--disable-gpu"
+        ] if is_headless else []
+    )
     context = browser.new_context(storage_state=storage_state)
+    from playwright_stealth import Stealth
     Stealth().apply_stealth_sync(context)
     page = context.new_page()
     return page, context, browser, playwright
@@ -93,7 +107,7 @@ def init_playwright_session(session: "AccountSession", handle: str):
 if __name__ == "__main__":
     import sys
 
-    from linkedin.campaigns.connect_follow_up import INPUT_CSV_PATH
+
 
     logging.getLogger().handlers.clear()
     logging.basicConfig(
@@ -114,6 +128,6 @@ if __name__ == "__main__":
 
     session.ensure_browser()
 
-    init_playwright_session(session=session, handle=handle)
+    # init_playwright_session(session=session, handle=handle) # REDUNDANT: ensure_browser() already calls this!
     print("Logged in! Close browser manually.")
     session.page.pause()

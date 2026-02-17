@@ -7,7 +7,7 @@ from linkedin.actions.connection_status import get_connection_status
 from linkedin.db.profiles import set_profile_state, get_profile, save_scraped_profile
 from linkedin.navigation.enums import MessageStatus
 from linkedin.navigation.enums import ProfileState
-from linkedin.navigation.exceptions import TerminalStateError, SkipProfile, ReachedConnectionLimit
+from linkedin.navigation.exceptions import TerminalStateError, SkipProfile, ReachedConnectionLimit, AuthenticationError, DetectionError
 from linkedin.navigation.utils import save_page
 
 logger = logging.getLogger(__name__)
@@ -103,13 +103,22 @@ def process_profile_row(
 
 
 def process_profiles(handle, session, profiles: list[dict], enrich_only: bool = False, limit: int = 20):
+    from linkedin.usage_tracker import UsageTracker
+    from linkedin.conf import ASSETS_DIR
+    
+    tracker = UsageTracker(ASSETS_DIR)
     perform_connections = True
     MAX_ACTIONS = limit
     actions_count = 0 
 
     for simple_profile in profiles:
+        # Check overall daily safety (persisted)
+        if not tracker.check_enrich_safety(handle):
+            logger.warning(colored(f"🛑 Persisted daily enrichment limit reached for {handle}. Stopping.", "red", attrs=["bold"]))
+            break
+
         if actions_count >= MAX_ACTIONS:
-            logger.info(colored(f"🛑 Daily limit reached ({MAX_ACTIONS} actions). Stopping for today.", "red", attrs=["bold"]))
+            logger.info(colored(f"🛑 Session limit reached ({MAX_ACTIONS} actions). Stopping for now.", "red", attrs=["bold"]))
             break
 
         continue_same_profile = True
@@ -123,15 +132,11 @@ def process_profiles(handle, session, profiles: list[dict], enrich_only: bool = 
                     enrich_only=enrich_only,
                 )
                 
-                # If we successfully processed a profile (sent invite or message), increment count
-                # Scrape is also an action!
-                if profile is None and enrich_only:
+                # If we processed a profile (scraped, invited, or messaged)
+                if (profile is None and enrich_only) or profile:
                      actions_count += 1
+                     tracker.increment(handle, "enrich_profiles")
                      logger.info(f"Action count: {actions_count}/{MAX_ACTIONS}")
-
-                if profile: 
-                    actions_count += 1
-                    logger.info(f"Action count: {actions_count}/{MAX_ACTIONS}")
 
                 continue_same_profile = bool(profile)
             except SkipProfile as e:
@@ -148,3 +153,6 @@ def process_profiles(handle, session, profiles: list[dict], enrich_only: bool = 
                     colored(f"Skipping profile: {public_identifier} reason: {e}", "red", attrs=["bold"])
                 )
                 continue_same_profile = False
+            except (AuthenticationError, DetectionError) as e:
+                logger.error(colored(f"🛑 CRITICAL ERROR: {e}. Stopping all operations.", "red", attrs=["bold"]))
+                return # Exit the entire function

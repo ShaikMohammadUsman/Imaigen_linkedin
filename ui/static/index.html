@@ -201,8 +201,42 @@
                     class="bg-gradient-to-br from-scooter-peach to-pink-100 rounded-2xl p-4 relative overflow-hidden group">
                     <div class="relative z-10">
                         <h4 class="font-bold text-gray-800 text-sm mb-1">Stay Safe</h4>
-                        <p class="text-xs text-gray-600 leading-relaxed">Limits are active. Scraper is mimicking human
-                            behavior.</p>
+
+                        <!-- Usage Meters -->
+                        <div class="my-3 space-y-3">
+                            <div
+                                class="p-2 bg-white/40 rounded-lg border border-white/20 backdrop-blur-sm shadow-sm group/usage">
+                                <div class="flex justify-between items-center mb-1">
+                                    <span
+                                        class="text-[9px] font-black text-gray-500 uppercase tracking-tighter">Enrichment</span>
+                                    <span id="enrich-usage-text"
+                                        class="text-[10px] font-black text-scooter-green animate-pulse">0/30</span>
+                                </div>
+                                <div class="w-full bg-gray-200/50 rounded-full h-1.5 overflow-hidden">
+                                    <div id="enrich-usage-bar"
+                                        class="bg-scooter-green h-full transition-all duration-700" style="width: 0%">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div
+                                class="p-2 bg-white/40 rounded-lg border border-white/20 backdrop-blur-sm shadow-sm group/usage">
+                                <div class="flex justify-between items-center mb-1">
+                                    <span
+                                        class="text-[9px] font-black text-gray-500 uppercase tracking-tighter">Harvesting</span>
+                                    <span id="harvest-usage-text"
+                                        class="text-[10px] font-black text-scooter-orange">0/50</span>
+                                </div>
+                                <div class="w-full bg-gray-300/30 rounded-full h-1.5 overflow-hidden">
+                                    <div id="harvest-usage-bar"
+                                        class="bg-scooter-orange h-full transition-all duration-700" style="width: 0%">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <p class="text-[10px] text-gray-600 leading-tight opacity-70">Mimicking human behavior to
+                            protect your account.</p>
                     </div>
                     <i
                         class="fa-solid fa-shield-cat absolute -bottom-2 -right-2 text-6xl text-white opacity-40 transform rotate-12 group-hover:scale-110 transition-transform"></i>
@@ -417,6 +451,10 @@
                                     Messages</span>
                             </div>
                         </label>
+                        <a href="/api/download_csv" target="_blank"
+                            class="bg-white hover:bg-gray-50 text-scooter-charcoal border border-gray-200 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all shadow-sm flex items-center">
+                            <i class="fa-solid fa-download mr-2"></i> CSV
+                        </a>
                         <button onclick="launchCampaignAction()"
                             class="bg-scooter-green hover:bg-scooter-greenHover text-white px-5 py-2.5 rounded-xl text-sm font-semibold transition-all shadow-md active:scale-95 flex items-center">
                             <i class="fa-solid fa-rocket mr-2"></i> Launch
@@ -563,7 +601,7 @@
                         class="bg-white p-6 rounded-3xl flex-1 card-shadow border border-white flex items-center justify-between group hover:-translate-y-1 transition-transform duration-300">
                         <div>
                             <p class="text-xs font-bold text-gray-400 uppercase tracking-wider">Daily Safety Cap</p>
-                            <h3 class="text-3xl font-bold text-gray-800 mt-1">20</h3>
+                            <h3 class="text-3xl font-bold text-gray-800 mt-1">30</h3>
                             <p class="text-xs text-scooter-green font-medium mt-1">Actions / Day</p>
                         </div>
                         <div
@@ -640,6 +678,10 @@
                                 <option value="FAILED">Failed</option>
                             </select>
                         </div>
+                        <button onclick="downloadFilteredResults()"
+                            class="bg-scooter-peach/20 hover:bg-scooter-peach/40 text-scooter-orange border border-scooter-peach/30 px-3 py-2 rounded-xl text-[11px] font-bold transition-all shadow-sm flex items-center gap-2">
+                            <i class="fa-solid fa-file-csv"></i> DOWNLOAD REPORT
+                        </button>
                         <button onclick="loadResults()"
                             class="bg-scooter-charcoal hover:bg-black text-white px-4 py-2 rounded-xl text-[11px] font-bold transition-all shadow-sm flex items-center gap-2">
                             <i class="fa-solid fa-rotate text-scooter-green"></i> REFRESH
@@ -712,6 +754,9 @@
                                         class="p-4 text-xs font-black text-blue-600 uppercase tracking-widest w-1/4 bg-blue-50/50">
                                         Experience & Skills</th>
                                     <th
+                                        class="p-4 text-xs font-black text-purple-600 uppercase tracking-widest w-1/4 bg-purple-50/50">
+                                        Company Intelligence</th>
+                                    <th
                                         class="p-4 text-xs font-black text-gray-500 uppercase tracking-widest text-right bg-gray-50/50">
                                         Actions</th>
                                     <th
@@ -722,7 +767,7 @@
                             <tbody id="results-table-body" class="text-sm text-gray-600 divide-y divide-gray-50">
                                 <!-- Data injected here -->
                                 <tr>
-                                    <td colspan="6" class="p-10 text-center text-gray-400 italic">No data loaded yet.
+                                    <td colspan="7" class="p-10 text-center text-gray-400 italic">No data loaded yet.
                                     </td>
                                 </tr>
                             </tbody>
@@ -1125,6 +1170,29 @@
                 const res = await fetch(`/api/usage?handle=${handle}`);
                 const usage = await res.json();
 
+                // Update Sidebar
+                const eText = document.getElementById('enrich-usage-text');
+                const eBar = document.getElementById('enrich-usage-bar');
+                if (eText && eBar) {
+                    const pct = Math.min(100, (usage.count / usage.limit) * 100);
+                    eText.innerText = `${usage.count}/${usage.limit}`;
+                    eBar.style.width = `${pct}%`;
+                    if (usage.count >= usage.limit) {
+                        eText.classList.remove('text-scooter-green');
+                        eText.classList.add('text-red-500');
+                        eBar.classList.remove('bg-scooter-green');
+                        eBar.classList.add('bg-red-500');
+                    }
+                }
+
+                const hText = document.getElementById('harvest-usage-text');
+                const hBar = document.getElementById('harvest-usage-bar');
+                if (hText && hBar) {
+                    const pct = Math.min(100, (usage.harvest_pages / usage.harvest_limit) * 100);
+                    hText.innerText = `${usage.harvest_pages}/${usage.harvest_limit}`;
+                    hBar.style.width = `${pct}%`;
+                }
+
                 // Update Badge in Harvest view
                 const badge = document.getElementById('harvest-usage-badge');
                 if (badge) {
@@ -1151,9 +1219,10 @@
             }
         }
 
-        // Initialize usage on load
+        // Initialize usage on load and refresh periodically
         window.addEventListener('DOMContentLoaded', () => {
-            setTimeout(loadUsage, 1000);
+            loadUsage();
+            setInterval(loadUsage, 15000); // Refresh every 15s
         });
 
         async function launchCampaignAction() {
@@ -1360,12 +1429,90 @@
             }
         }
 
+        function downloadFilteredResults() {
+            const role = document.getElementById('filter-role').value;
+            const status = document.getElementById('filter-status').value;
+
+            // 1. Apply Filters
+            const filtered = allPoolData.filter(row => {
+                const roleMatch = role === 'all' || row.Role === role;
+                const statusMatch = status === 'all' || row.Status === status;
+                return roleMatch && statusMatch;
+            });
+
+            if (filtered.length === 0) {
+                alert("No results to download for the selected filters.");
+                return;
+            }
+
+            // 2. Setup Headers
+            const baseHeaders = [
+                "Full Name", "Status", "Role", "URL", "Headline",
+                "Current Company", "Location", "Email", "Phone", "About", "Skills"
+            ];
+            const intelHeaders = [
+                "Company Intelligence (Industry)",
+                "Company Intelligence (Size)",
+                "Company Intelligence (HQ)",
+                "Company Intelligence (Website)",
+                "Full Company Intelligence Summary"
+            ];
+
+            const allHeaders = [...baseHeaders, ...intelHeaders];
+
+            // 3. Generate CSV String
+            const csvRows = [allHeaders.join(",")];
+
+            filtered.forEach(item => {
+                // Get intelligence from the first experience item (current company)
+                const currentJob = (item.Experience && item.Experience.length > 0) ? item.Experience[0] : {};
+
+                const intelValues = {
+                    "Company Intelligence (Industry)": currentJob.company_industry || "",
+                    "Company Intelligence (Size)": currentJob.company_size || "",
+                    "Company Intelligence (HQ)": currentJob.company_headquarters || "",
+                    "Company Intelligence (Website)": currentJob.company_website || "",
+                    "Full Company Intelligence Summary": currentJob.company_description || ""
+                };
+
+                const values = allHeaders.map(header => {
+                    let val = "";
+                    if (baseHeaders.includes(header)) {
+                        val = item[header] || "";
+                    } else {
+                        val = intelValues[header] || "";
+                    }
+                    // Basic escaping for CSV: double quotes around fields, escape existing double quotes
+                    const escaped = ('' + val).replace(/"/g, '""');
+                    return `"${escaped}"`;
+                });
+                csvRows.push(values.join(","));
+            });
+
+            const csvString = csvRows.join("\n");
+
+            // 4. Trigger Download
+            const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            const url = URL.createObjectURL(blob);
+
+            const timestamp = new Date().toISOString().split('T')[0];
+            const filename = `OUTREACH_REPORT_${role.toUpperCase()}_${status.toUpperCase()}_${timestamp}.csv`;
+
+            link.setAttribute("href", url);
+            link.setAttribute("download", filename);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
         function renderResultsTable(data) {
             const tbody = document.getElementById('results-table-body');
             tbody.innerHTML = '';
 
             if (data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" class="p-20 text-center text-gray-400 italic">No candidates found matching filters.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="7" class="p-20 text-center text-gray-400 italic">No candidates found matching filters.</td></tr>';
                 return;
             }
 
@@ -1416,9 +1563,27 @@
                             <div class="space-y-2">
                                 ${Array.isArray(row['Experience']) && row['Experience'].length > 0 ?
                         row['Experience'].slice(0, 2).map((exp, idx) => `
-                                    <div class="${idx > 0 ? 'pt-2 border-t border-gray-50' : ''}">
+                                    <div class="relative ${idx > 0 ? 'pt-2 border-t border-gray-50' : ''}">
                                         <div class="text-[10px] text-gray-900 font-bold leading-tight">${exp.title}</div>
-                                        <div class="text-[9px] text-scooter-green font-medium">${exp.company}</div>
+                                        <div class="flex items-center gap-2">
+                                            <div class="text-[9px] text-scooter-green font-medium">${exp.company}</div>
+                                            ${exp.company_industry || exp.company_description ? `
+                                                <button onclick="this.nextElementSibling.classList.toggle('hidden')" class="text-[7px] font-black text-white bg-scooter-green px-1.5 py-0.5 rounded-full hover:bg-scooter-greenHover transition-colors ml-auto shadow-sm">
+                                                    INTEL <i class="fa-solid fa-chevron-down ml-0.5"></i>
+                                                </button>
+                                                <div class="hidden absolute left-0 right-0 z-50 mt-1 p-3 bg-white rounded-2xl shadow-2xl border border-gray-100 animate-in fade-in slide-in-from-top-2 duration-200" style="width: 250px;">
+                                                    <div class="space-y-3">
+                                                        <div class="grid grid-cols-2 gap-3">
+                                                            ${exp.company_industry ? `<div><span class="text-[7px] text-gray-400 block uppercase font-bold tracking-widest">Industry</span><span class="text-[9px] text-gray-700 block font-medium uppercase">${exp.company_industry}</span></div>` : ''}
+                                                            ${exp.company_size ? `<div><span class="text-[7px] text-gray-400 block uppercase font-bold tracking-widest">Size</span><span class="text-[9px] text-gray-700 block font-medium uppercase">${exp.company_size}</span></div>` : ''}
+                                                            ${exp.company_headquarters ? `<div class="col-span-2"><span class="text-[7px] text-gray-400 block uppercase font-bold tracking-widest">HQ</span><span class="text-[9px] text-gray-700 block font-medium uppercase">${exp.company_headquarters}</span></div>` : ''}
+                                                            ${exp.company_website ? `<div class="col-span-2"><span class="text-[7px] text-gray-400 block uppercase font-bold tracking-widest">Website</span><a href="${exp.company_website}" target="_blank" class="text-[9px] text-blue-500 block hover:underline truncate">${exp.company_website.replace('https://', '')}</a></div>` : ''}
+                                                        </div>
+                                                        ${exp.company_description ? `<div class="pt-2 border-t border-gray-100"><span class="text-[7px] text-gray-400 block uppercase font-bold tracking-widest mb-1.5">Intelligence About</span><p class="text-[9px] text-gray-600 italic leading-relaxed line-clamp-4">${exp.company_description}</p></div>` : ''}
+                                                    </div>
+                                                </div>
+                                            ` : ''}
+                                        </div>
                                     </div>
                                     `).join('')
                         : '<div class="text-[10px] text-gray-400 italic">No experience data</div>'}
@@ -1430,6 +1595,25 @@
                     }
                             </div>
                         </div>
+                    </td>
+                    <td class="p-4 align-top w-1/4">
+                        ${(() => {
+                        const cJob = (row.Experience && row.Experience.length > 0) ? row.Experience[0] : {};
+                        if (cJob.company_description) {
+                            return `
+                                    <div class="space-y-3">
+                                        <div class="grid grid-cols-2 gap-2">
+                                            ${cJob.company_industry ? `<div class="bg-purple-50 p-1 rounded-lg border border-purple-100"><span class="text-[7px] text-purple-400 block uppercase font-bold tracking-tight">Industry</span><span class="text-[9px] text-purple-700 block truncate font-medium">${cJob.company_industry}</span></div>` : ''}
+                                            ${cJob.company_size ? `<div class="bg-purple-50 p-1 rounded-lg border border-purple-100"><span class="text-[7px] text-purple-400 block uppercase font-bold tracking-tight">Size</span><span class="text-[9px] text-purple-700 block truncate font-medium">${cJob.company_size}</span></div>` : ''}
+                                        </div>
+                                        <div class="text-[10px] text-gray-600 italic leading-relaxed line-clamp-5 bg-gray-50/50 p-2.5 rounded-xl border border-gray-100">
+                                            ${cJob.company_description}
+                                        </div>
+                                    </div>
+                                `;
+                        }
+                        return '<span class="text-gray-300 italic text-[10px]">No intelligence gathered.</span>';
+                    })()}
                     </td>
                     <td class="p-4 text-right align-top">
                          <div class="flex flex-col items-end gap-2">
@@ -1621,12 +1805,27 @@
                                     </span>
                                     <div class="space-y-2">
                                         ${Array.isArray(row['Experience']) && row['Experience'].length > 0 ?
-                            row['Experience'].slice(0, 2).map(e => `
-                                                <div class="text-[10px] leading-snug">
+                            row['Experience'].slice(0, 2).map((e, idx) => `
+                                                <div class="text-[10px] leading-snug group/exp mb-3 last:mb-0">
                                                     <div class="font-bold text-gray-800">${e.title}</div>
-                                                    <div class="text-gray-500 flex items-center gap-1">
-                                                        <span>${e.company}</span>
+                                                    <div class="text-gray-500 flex items-center flex-wrap gap-x-2 gap-y-1">
+                                                        <span class="font-medium">${e.company}</span>
                                                         ${e.dates ? `<span class="text-[8px] opacity-60">• ${e.dates}</span>` : ''}
+                                                        
+                                                        ${e.company_industry || e.company_description ? `
+                                                            <button onclick="this.nextElementSibling.classList.toggle('hidden')" class="text-scooter-green text-[8px] font-bold uppercase tracking-wider bg-green-50 px-1.5 py-0.5 rounded border border-green-100 hover:bg-scooter-green hover:text-white transition-all ml-auto">
+                                                                Intelligence <i class="fa-solid fa-chevron-down ml-1"></i>
+                                                            </button>
+                                                            <div class="hidden w-full mt-2 p-2 bg-gray-50 rounded-lg border border-gray-100 animate-fade-in">
+                                                                <div class="grid grid-cols-2 gap-2 mb-2">
+                                                                    ${e.company_industry ? `<div><span class="text-[7px] text-gray-400 block uppercase font-bold">Industry</span><span class="text-[9px] text-gray-600 block">${e.company_industry}</span></div>` : ''}
+                                                                    ${e.company_size ? `<div><span class="text-[7px] text-gray-400 block uppercase font-bold">Size</span><span class="text-[9px] text-gray-600 block">${e.company_size}</span></div>` : ''}
+                                                                    ${e.company_headquarters ? `<div><span class="text-[7px] text-gray-400 block uppercase font-bold">HQ</span><span class="text-[9px] text-gray-600 block">${e.company_headquarters}</span></div>` : ''}
+                                                                    ${e.company_website ? `<div><span class="text-[7px] text-gray-400 block uppercase font-bold">Website</span><a href="${e.company_website}" target="_blank" class="text-[9px] text-blue-500 block hover:underline truncate">${e.company_website.replace('https://', '')}</a></div>` : ''}
+                                                                </div>
+                                                                ${e.company_description ? `<div class="pt-1 border-t border-gray-200/50"><span class="text-[7px] text-gray-400 block uppercase font-bold mb-1">About</span><p class="text-[9px] text-gray-500 italic line-clamp-3 leading-relaxed">${e.company_description}</p></div>` : ''}
+                                                            </div>
+                                                        ` : ''}
                                                     </div>
                                                 </div>
                                             `).join('') : '<span class="text-gray-300 italic text-[10px]">No experience detailed yet.</span>'

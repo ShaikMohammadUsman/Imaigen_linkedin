@@ -16,3 +16,8 @@ class SkipProfile(Exception):
 class ReachedConnectionLimit(Exception):
     """ Weekly connection limit reached. """
     pass
+
+
+class DetectionError(Exception):
+    """ LinkedIn detected the bot (e.g., CAPTCHA or Challenge). """
+    pass
