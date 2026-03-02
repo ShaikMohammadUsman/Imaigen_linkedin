@@ -19,7 +19,77 @@
       "harvest_pages": 4
     },
     "2026-02-17": {
-      "harvest_pages": 8
+      "harvest_pages": 12,
+      "enrich_profiles": 4
+    },
+    "2026-02-18": {
+      "harvest_pages": 5,
+      "enrich_profiles": 4
+    },
+    "metadata": {
+      "first_seen": "2026-02-25"
+    },
+    "2026-02-25": {
+      "people_searches": 4,
+      "harvest_pages": 18,
+      "harvested_cards": 10
+    },
+    "weekly": {
+      "2026-W09": {
+        "people_searches": 12,
+        "harvest_pages": 28,
+        "harvested_cards": 47
+      }
+    },
+    "monthly": {
+      "2026-02": {
+        "people_searches": 12,
+        "harvest_pages": 28,
+        "harvested_cards": 47
+      }
+    },
+    "search_history": {
+      "e08dd6c5f4839f5baeb76bf4693aac53": 1,
+      "a7abc55be487dffbd8e966018ec5c632": 2,
+      "37d397d8faef7de9d95c44b001eb25aa": 1,
+      "6b3e51f228b2770b155d240af3d24490": 5,
+      "3271f45ab721f31f7921ec782714182b": 1,
+      "cfda21e46a30bdd2f4e64d0091e41048": 1,
+      "7c4b99cef722c314c60d8aefc4198aab": 1,
+      "094d117e28ef31d9cd3237b51a73074f": 4
+    },
+    "2026-02-26": {
+      "people_searches": 2,
+      "harvest_pages": 10,
+      "harvested_cards": 37
+    }
+  },
+  "usman@thescooter.ai": {
+    "metadata": {
+      "first_seen": "2026-02-27",
+      "account_type": "new"
+    },
+    "2026-02-27": {
+      "people_searches": 1,
+      "harvest_pages": 1,
+      "harvested_cards": 12
+    },
+    "weekly": {
+      "2026-W09": {
+        "people_searches": 2,
+        "harvest_pages": 1,
+        "harvested_cards": 12
+      }
+    },
+    "monthly": {
+      "2026-02": {
+        "people_searches": 2,
+        "harvest_pages": 1,
+        "harvested_cards": 12
+      }
+    },
+    "search_history": {
+      "37d397d8faef7de9d95c44b001eb25aa": 1
     }
   }
 }

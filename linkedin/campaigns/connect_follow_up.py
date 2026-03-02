@@ -112,10 +112,19 @@ def process_profiles(handle, session, profiles: list[dict], enrich_only: bool = 
     actions_count = 0 
 
     for simple_profile in profiles:
-        # Check overall daily safety (persisted)
-        if not tracker.check_enrich_safety(handle):
-            logger.warning(colored(f"🛑 Persisted daily enrichment limit reached for {handle}. Stopping.", "red", attrs=["bold"]))
+        # Check overall daily & monthly safety (persisted)
+        if not tracker.check_safety(handle, "enrich_profiles", "enrich_profiles"):
+            logger.warning(colored(f"🛑 Enrichment limit reached for {handle}. Stopping.", "red", attrs=["bold"]))
             break
+
+        # 🟢 Batch Pause (3-7 mins) after every 3-4 profiles
+        if session.profiles_scraped_this_batch >= session.current_batch_limit:
+            msg = f"☕ Batch complete. Taking a human pause of several minutes..."
+            logger.info(colored(msg, "yellow"))
+            from linkedin.sessions.account import human_delay
+            human_delay(180, 420, mode="break")
+            session.profiles_scraped_this_batch = 0
+            session.current_batch_limit = random.randint(3, 4)
 
         if actions_count >= MAX_ACTIONS:
             logger.info(colored(f"🛑 Session limit reached ({MAX_ACTIONS} actions). Stopping for now.", "red", attrs=["bold"]))
@@ -135,6 +144,7 @@ def process_profiles(handle, session, profiles: list[dict], enrich_only: bool = 
                 # If we processed a profile (scraped, invited, or messaged)
                 if (profile is None and enrich_only) or profile:
                      actions_count += 1
+                     session.profiles_scraped_this_batch += 1
                      tracker.increment(handle, "enrich_profiles")
                      logger.info(f"Action count: {actions_count}/{MAX_ACTIONS}")
 

@@ -84,7 +84,7 @@ async def start_harvest(
         return JSONResponse({"status": "error", "message": "A process is already running."}, status_code=400)
     
     cmd = [
-        "python", "-u", "harvest_search.py", 
+        sys.executable, "-u", "harvest_search.py", 
         handle, search_url, str(start_page), str(pages), job_id, role_name, company_name, app_link, location, compensation
     ]
     
@@ -149,7 +149,7 @@ async def start_campaign(req: Request):
     if current_process and current_process.returncode is None:
         return JSONResponse({"status": "error", "message": "A process is already running."}, status_code=400)
     
-    cmd = ["python", "-u", "main.py", handle]
+    cmd = [sys.executable, "-u", "main.py", handle]
     if enrich_only:
         cmd.append("--enrich-only")
         
@@ -179,15 +179,55 @@ async def start_campaign(req: Request):
 @app.post("/api/stop")
 async def stop_process():
     global current_process
+    
+    msg = "🛑 [SERVER] Stop request received. Terminating processes..."
+    print(msg)
+    await log_queue.put(msg)
+    
+    # 1. Primary: Stop the tracked process
     if current_process:
         try:
+            # Try gentle terminate first
             current_process.terminate()
-            await current_process.wait()
+            try:
+                # Wait up to 3 seconds for it to exit
+                await asyncio.wait_for(current_process.wait(), timeout=3.0)
+            except asyncio.TimeoutError:
+                # Still alive? Use the hammer.
+                print("⚠️ [SERVER] Process did not exit gracefully, using SIGKILL.")
+                current_process.kill()
+                await current_process.wait()
+            
             current_process = None
-            return {"status": "stopped"}
         except Exception as e:
-            return {"status": "error", "message": str(e)}
-    return {"status": "no_process"}
+            print(f"❌ [SERVER] Error stopping process handle: {e}")
+
+    # 2. Secondary/Fallback: Kill any orphaned bot processes 
+    # (Happens if server was reloaded while a bot was running)
+    try:
+        import psutil
+        count = 0
+        for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
+            try:
+                # Look for our script names
+                cmd = " ".join(proc.info.get('cmdline') or [])
+                if any(x in cmd for x in ["harvest_search.py", "main.py", "check_replies.py"]):
+                    # Don't kill the server itself (obviously)
+                    if proc.pid != os.getpid():
+                        proc.kill()
+                        count += 1
+            except (psutil.NoSuchProcess, psutil.AccessDenied):
+                continue
+        if count > 0:
+            msg = f"🧹 [SERVER] Cleaned up {count} orphaned bot processes."
+            print(msg)
+            await log_queue.put(msg)
+    except ImportError:
+        # psutil not installed, fallback to basic pkill command
+        os.system("pkill -9 -f 'harvest_search.py|main.py|check_replies.py'")
+        print("🧹 [SERVER] Fallback cleanup (pkill) executed.")
+
+    return {"status": "stopped"}
 
 @app.get("/api/results")
 def get_results(handle: str = None, refresh: bool = False):
@@ -460,30 +500,74 @@ from linkedin.usage_tracker import UsageTracker, HARVEST_PAGE_LIMIT
 
 @app.get("/api/usage")
 def get_usage(handle: str):
-    from linkedin.usage_tracker import UsageTracker, ENRICH_PROFILE_LIMIT, HARVEST_PAGE_LIMIT
+    from linkedin.usage_tracker import UsageTracker, SAFETY_CONFIG
+    
+    tracker = UsageTracker(ASSETS_DIR)
+    
+    # Categories to monitor
+    categories = ["enrich_profiles", "harvested_cards", "people_searches"]
+    results = {}
+    is_safe_all = True
     
     if not handle or handle == "undefined":
-        return {
-            "count": 0,
-            "limit": ENRICH_PROFILE_LIMIT,
-            "harvest_pages": 0,
-            "harvest_limit": HARVEST_PAGE_LIMIT,
-            "is_safe": True,
-            "remaining": ENRICH_PROFILE_LIMIT
+        # Return sensible defaults
+        for cat in categories:
+            results[cat] = {
+                "session": {"count": 0, "limit": 0},
+                "daily": {"count": 0, "limit": 0},
+                "weekly": {"count": 0, "limit": 0},
+                "monthly": {"count": 0, "limit": 0}
+            }
+        return results
+    
+    for cat in categories:
+        config = SAFETY_CONFIG.get(cat, {})
+        
+        # Calculate limits
+        s_limit = tracker.get_session_limit(handle, cat)
+        d_limit = tracker.get_dynamic_daily_limit(handle, cat)
+        w_limit = config.get("weekly_target_range", (0, 0))[1]
+        m_limit = config.get("monthly_target_range", (0, 0))[1]
+        
+        # Get counts (Session is always 0 at API start, 
+        # but for simplicity we can track it per-request if we want? 
+        # Actually session count here means 'in current run', but we don't have a persistent session counter in API.
+        # However, we can track 'since UI load'? No, better to just show the session LIMIT 
+        # and maybe the UI handles the increment? 
+        # Actually, let's keep session count as 0 for now as it resets frequently.
+        counts = {
+            "session": {"count": 0, "limit": s_limit}, 
+            "daily": {"count": tracker.get_count(handle, cat, "daily"), "limit": d_limit},
+            "weekly": {"count": tracker.get_count(handle, cat, "weekly"), "limit": w_limit},
+            "monthly": {"count": tracker.get_count(handle, cat, "monthly"), "limit": m_limit}
         }
         
-    tracker = UsageTracker(ASSETS_DIR)
-    enrich_count = tracker.get_todays_count(handle, "enrich_profiles")
-    harvest_count = tracker.get_todays_count(handle, "harvest_pages")
+        # Safety Check
+        is_safe = counts["daily"]["count"] < d_limit and counts["monthly"]["count"] < m_limit
+        if not is_safe: is_safe_all = False
+        
+        results[cat] = counts
+        results[cat]["is_safe"] = is_safe
+
+    # 🟢 Add Account Metadata
+    stats = tracker._load_stats()
+    metadata = stats.get(handle, {}).get("metadata", {})
+    first_seen = metadata.get("first_seen", tracker._get_today_str())
     
-    return {
-        "count": enrich_count,
-        "limit": ENRICH_PROFILE_LIMIT,
-        "harvest_pages": harvest_count,
-        "harvest_limit": HARVEST_PAGE_LIMIT,
-        "is_safe": enrich_count < ENRICH_PROFILE_LIMIT,
-        "remaining": max(0, ENRICH_PROFILE_LIMIT - enrich_count)
+    # Calculate simple maturity string
+    from datetime import date
+    days_diff = (date.today() - date.fromisoformat(first_seen)).days
+    status = "WARM-UP PHASE" if days_diff <= 14 else "MATURE ACCOUNT"
+    
+    results["account_meta"] = {
+        "handle": handle,
+        "first_seen": first_seen,
+        "status": status,
+        "days_active": days_diff
     }
+
+    results["is_safe_all"] = is_safe_all
+    return results
     
 @app.get("/api/queue")
 def get_queue(handle: str = None):
@@ -578,7 +662,7 @@ async def check_replies_now(handle: str):
     if current_process and current_process.returncode is None:
         return JSONResponse({"status": "error", "message": "Another process is running."}, status_code=400)
     
-    cmd = ["python", "-u", "check_replies.py"]
+    cmd = [sys.executable, "-u", "check_replies.py"]
     
     current_process = await asyncio.create_subprocess_exec(
         *cmd,

@@ -63,7 +63,11 @@ class AccountSession:
         # For now defaults
         self.headless = False # self.config.get("headless", True) # Default to visible for debugging
         self.actions_count = 0 
-        self.burst_limit = random.randint(5, 10) # Randomize when to take a big break
+        self.burst_limit = random.randint(5, 12) # Randomize when to take a big break
+        
+        # 🟢 Ultra-Safe Batch Tracking
+        self.profiles_scraped_this_batch = 0
+        self.current_batch_limit = random.randint(3, 4)
         
     @property
     def db_session(self):

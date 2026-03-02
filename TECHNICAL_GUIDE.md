@@ -109,3 +109,18 @@ playwright install chromium
 # Run Server
 ./venv/bin/uvicorn ui_server:app --host 0.0.0.0 --port 8000 --reload
 ```
+
+if we wncountered 401 error then run below steps..
+
+Step-1: Clear cache of current session fo email we used for login
+
+rm /Users/shaikmohammadusman/Desktop/Work_Project/Linkedin_Scraping/assets/cookies/vishnu02.tech@gmail.com.json
+
+
+Step-2: Run below command for login agian
+
+export HEADLESS=false && python3 -m linkedin.navigation.login "vishnu02.tech@gmail.com"
+
+Step-3 : After loogin in run the belwo
+
+python3 ui_server.py

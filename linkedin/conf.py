@@ -38,8 +38,8 @@ FIXTURE_DIR = ROOT_DIR / "tests" / "fixtures"
 FIXTURE_PROFILES_DIR = FIXTURE_DIR / "profiles"
 FIXTURE_PAGES_DIR = FIXTURE_DIR / "pages"
 
-MIN_DELAY = 45  # Profile-to-Profile delay (safe)
-MAX_DELAY = 120
+MIN_DELAY = 30  # Profile-to-Profile delay (safe: 30-75s)
+MAX_DELAY = 75
 
 MIN_UI_DELAY = 1.5  # Button clicks, small steps
 MAX_UI_DELAY = 4.0

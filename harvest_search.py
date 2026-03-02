@@ -7,6 +7,7 @@ import random
 from pathlib import Path
 from urllib.parse import urlparse, parse_qs, urlencode, urljoin
 
+from termcolor import colored
 from linkedin.conf import ASSETS_DIR
 from linkedin.sessions.registry import get_session
 from linkedin.navigation.utils import goto_page
@@ -26,21 +27,46 @@ def harvest_search_results(
     Navigates to a LinkedIn search URL, paginates, extracts profile URLs,
     and saves them to a CSV file.
     
-    SAFETY LIMIT: Capped to 10 pages max per run to avoid Commercial Use Limit triggers.
+    SAFETY LIMIT: Capped to 6 pages max per run to avoid Commercial Use Limit triggers.
     """
-    
-    # Enforce safety limit
-    if max_pages > 10:
-        logger.warning(f"⚠️  Requested {max_pages} pages, but capping to 10.")
-        max_pages = 10
+
+    # Operating Hours Check (09:30 - 21:30 IST)
+    # Metadata IST is UTC+5.5
+    from datetime import datetime, timezone, timedelta
+    ist = timezone(timedelta(hours=5, minutes=30))
+    now_ist = datetime.now(ist)
+    if now_ist.hour < 9 or (now_ist.hour == 9 and now_ist.minute < 30) or now_ist.hour >= 21:
+        logger.error(f"🛑 Outside of Operating Hours (09:30-21:30 IST). Current IST: {now_ist.strftime('%H:%M')}. Aborting.")
+        return
 
     # Init Tracker
     tracker = UsageTracker(ASSETS_DIR)
+
+    # 🟢 Continuation Logic
+    if start_page == 1:
+        last_page = tracker.get_last_page(handle, search_url)
+        if last_page > 0:
+            start_page = last_page + 1
+            logger.info(colored(f"🔄 Continuing search from page {start_page} (Last was {last_page})", "cyan"))
+
+    # 🟢 Randomized Session Page Limit (Max 6)
+    session_limit = tracker.get_session_page_limit(handle)
+    # If using automated default (1) or legacy default (>=5), apply randomization
+    if max_pages == 1 or max_pages >= 5: 
+        max_pages = session_limit
+        logger.info(colored(f"🎲 Randomized Session Limit: {max_pages} pages for this run.", "cyan"))
+
+    if max_pages > 6:
+        logger.warning(f"⚠️  Capping session to 6 pages for safety.")
+        max_pages = 6
     
-    # Check limit before running
-    if not tracker.check_harvest_safety(handle):
-        logger.error("🛑 Daily Harvesting Limit Reached. Aborting for safety.")
+    # Check People Search Safety
+    if not tracker.check_safety(handle, "people_searches", "people_searches"):
+        logger.error("🛑 People Search Daily Limit Reached. Aborting for safety.")
         return
+
+    # Log this search
+    tracker.increment(handle, "people_searches")
 
     session = get_session(handle)
     session.ensure_browser()
@@ -82,21 +108,24 @@ def harvest_search_results(
             logger.warning(f"Could not read existing file: {e}")
 
     for page_num in range(start_page, start_page + max_pages):
-        # Safety Check per page
-        if not tracker.check_harvest_safety(handle):
-             logger.warning("🛑 Limit reached during run. Stopping.")
+        # 🟢 Safety Check for Card Volume
+        if not tracker.check_safety(handle, "harvested_cards", "harvested_cards"):
+             logger.warning("🛑 Daily Card Harvesting Limit reached. Stopping.")
              break
         
-        # Log this page visit
+        # Log progress for continuation
+        tracker.update_last_page(handle, search_url, page_num)
+        
+        # Log this page as a 'visit' (legacy tracker used this)
         tracker.increment(handle, "harvest_pages")
         
         logger.info(f"--- Processing Page {page_num} ---")
         
         # Scroll down to ensure all lazy-loaded elements appear
         for _ in range(3):
-            # Human scroll
-            page.mouse.wheel(0, 1000)
-            time.sleep(1)
+            # Human scroll with randomness
+            page.mouse.wheel(0, random.randint(800, 1200))
+            time.sleep(random.uniform(1.2, 2.5))
         
         # Dynamic Smart Wait with Retries
         found_results = False
@@ -107,7 +136,7 @@ def harvest_search_results(
             try:
                 # Wait for results with a short timeout per attempt
                 page.wait_for_selector(
-                    '.reusable-search__result-container, .entity-result, .search-results__no-results, li.reusable-search__result-container', 
+                    '.reusable-search__result-container, .entity-result, .search-results__no-results, li.reusable-search__result-container, [data-chameleon-result-id]', 
                     timeout=int(delay * 1000)
                 )
                 found_results = True
@@ -120,7 +149,9 @@ def harvest_search_results(
                 time.sleep(random.uniform(1.0, 2.0))
         
         if not found_results:
-            logger.warning("⚠️ High latency detected. Attempting final scan regardless of selector state.")
+            grace_period = random.uniform(7.0, 11.5)
+            logger.info(colored(f"⏳ [SAFE PACING] Content loading slowly. Waiting {grace_period:.1f}s for full render...", "yellow"))
+            time.sleep(grace_period)
         
         # Strategy: Try multiple selectors for search result cards
         # LinkedIn frequently changes class names, so we try several patterns
@@ -128,17 +159,21 @@ def harvest_search_results(
             'li.reusable-search__result-container, '
             '.reusable-search__result-container, '
             '.entity-result, '
+            '[data-chameleon-result-id], '
             '.search-results__cluster-item, '
-            'li[class*="reusable-search"]'
+            'div[class*="entity-result"], '
+            'li:has(.entity-result), '
+            'div[data-view-name*="search-entity"]'
         )
         count = result_cards.count()
         
         # If still no results, try a broader search
         if count == 0:
-            logger.warning("Primary selectors found 0 results. Trying broader search...")
-            result_cards = page.locator('li:has(a[href*="/in/"])')
+            logger.warning("Primary selectors missed cards. Trying deep-DOM scan...")
+            # Look for ANY container that has a link starting with /in/
+            result_cards = page.locator('li:has(a[href*="/in/"]), div:has(> a[href*="/in/"]), [class*="result-card"]')
             count = result_cards.count()
-            logger.info(f"Broader search found {count} potential result cards.")
+            logger.info(f"Deep scan found {count} potential cards.")
         
         if count == 0:
             # Check for common "No Results" or "Limit Reached" text
@@ -200,6 +235,8 @@ def harvest_search_results(
                                 name_text = name_el.inner_text().strip()
                                 if name_text and len(name_text) > 1:
                                     name = name_text.split('\n')[0]
+                                    if "LinkedIn Member" in name:
+                                        logger.debug(f"  [i] Restricted profile found: {name}")
                                     break
                             except:
                                 continue
@@ -230,6 +267,7 @@ def harvest_search_results(
                         "name": name,
                         "picture": pic_url
                     })
+                    tracker.increment(handle, "harvested_cards")
                     print(f"  [+] Found New: {name} ({clean_url})")
                 else:
                     logger.debug(f"  [-] Skipping Duplicate: {clean_url}")
@@ -237,22 +275,30 @@ def harvest_search_results(
                 logger.debug(f"Error parsing card {i}: {e}")
         
         if len(new_urls_on_page) == 0 and len(seen_on_page) == 0:
-             logger.warning("❌ No profile URLs found on page!")
-             try:
-                 screenshot_path = f"debug_harvest_page_{page_num}.png"
-                 page.screenshot(path=screenshot_path)
-                 logger.info(f"Saved debug screenshot to {screenshot_path}")
-                 
-                 # Check for Authwall / Security
-                 content = page.content()
-                 if "Sign In" in content or "authwall" in content:
-                     logger.error("🚨 Hit Authwall or Login Check! Stopping.")
-                     break
-                 if "security check" in content.lower() or "captcha" in content.lower():
-                     logger.error("🚨 SECURITY CHECK DETECTED! Use VNC to solve the captcha.")
-                     break
-             except Exception:
-                 pass
+            logger.warning("❌ No profile URLs found on page!")
+            try:
+                screenshot_path = f"debug_harvest_page_{page_num}.png"
+                page.screenshot(path=screenshot_path)
+                logger.info(f"Saved debug screenshot to {screenshot_path}")
+                
+                # Check for Authwall / Security
+                content = page.content().lower()
+                # More specific captcha/security check detection
+                is_captcha = any(x in content for x in ["/checkpoint/challenge/", "captcha-container", "recaptcha-script"])
+                is_authwall = "authwall" in content or "login.php" in content or ("Sign In" in page.content() and "Join now" in page.content())
+                
+                if is_authwall:
+                    logger.error("🚨 Hit Authwall or Login Check! The session may have expired.")
+                    break
+                if is_captcha or (("security check" in content or "captcha" in content) and "challenge" in page.url):
+                    logger.error("🚨 SECURITY CHECK/CAPTCHA DETECTED! Use VNC to solve the captcha manually.")
+                    break
+                
+                # If we found nothing but it's clearly a search page, it's a "Network Restriction"
+                if "search" in page.url and "LinkedIn Member" in page.content():
+                    logger.warning("🔍 All results are 'LinkedIn Member'. You are seeing out-of-network profiles or have hit a search volume limit.")
+            except Exception:
+                pass
         
         # Save State (Last Page Scraped)
         try:
@@ -293,19 +339,42 @@ def harvest_search_results(
                     ])
 
         
+        # 🟢 Scroll to Bottom to find Next Button
+        logger.info("Scrolling to bottom for pagination...")
+        page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+        time.sleep(2)
+
         # Check for 'Next' button
         if page_num < (start_page + max_pages - 1):
             try:
-                next_button = page.locator('button[aria-label="Next"]')
-                if next_button.is_visible() and next_button.is_enabled():
-                    logger.info("Clicking 'Next' page...")
-                    next_button.click()
-                    session.wait(min_delay=5, max_delay=10, to_scrape=False)
+                # Try multiple common LinkedIn Next button selectors
+                next_selectors = [
+                    'button[aria-label="Next"]',
+                    'a[aria-label="Next"]',
+                    '.artdeco-pagination__button--next',
+                    'button:has-text("Next")',
+                    'a:has-text("Next")'
+                ]
+                
+                found_next = False
+                for selector in next_selectors:
+                    btn = page.locator(selector).first
+                    if btn.count() and btn.is_visible():
+                        logger.info(f"Found 'Next' via: {selector}")
+                        btn.click()
+                        found_next = True
+                        break
+                
+                if found_next:
+                    # 🟢 Ultra-Conservative Randomized Pause (17-43s)
+                    delay = random.uniform(17, 43)
+                    logger.info(colored(f"⏳ Human-like Pause: {delay:.2f}s before next page...", "yellow"))
+                    time.sleep(delay)
                 else:
                     logger.info("No 'Next' button found or end of results. Stopping.")
                     break
-            except Exception:
-                 logger.info("Error finding Next button. Stopping.")
+            except Exception as e:
+                 logger.info(f"Error finding Next button: {e}. Stopping.")
                  break
 
     logger.info(f"Harvesting complete! Saved {len(collected_urls)} URLs to {output_path}")
