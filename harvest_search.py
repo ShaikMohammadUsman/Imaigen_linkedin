@@ -200,9 +200,13 @@ def harvest_search_results(
                 if not card.is_visible(): continue
                 
                 # 🟢 Human-like "Skimming" Pause
-                # Mimics a user looking at a result for a moment before moving to next
-                skim_delay = random.uniform(0.6, 1.8)
-                logger.debug(f"  [🔍] Skimming result {i+1}... ({skim_delay:.2f}s)")
+                # 90% chance of a quick skim, 10% chance of a "Deep Look"
+                if random.random() < 0.10:
+                    skim_delay = random.uniform(3.5, 6.2)
+                    logger.info(colored(f"  [👀] Taking a 'Deep Look' at result {i+1}... ({skim_delay:.2f}s)", "magenta"))
+                else:
+                    skim_delay = random.uniform(0.6, 1.8)
+                    logger.debug(f"  [🔍] Skimming result {i+1}... ({skim_delay:.2f}s)")
                 
                 # Briefly hover to trigger any visual states/lazy loads
                 try:
