@@ -65,9 +65,6 @@ def harvest_search_results(
         logger.error("🛑 People Search Daily Limit Reached. Aborting for safety.")
         return
 
-    # Log this search
-    tracker.increment(handle, "people_searches")
-
     session = get_session(handle)
     session.ensure_browser()
     page = session.page
@@ -84,6 +81,9 @@ def harvest_search_results(
         error_message="Failed to load search results",
         to_scrape=False # We handle scraping manually here
     )
+
+    # 🟢 Increment search usage only AFTER successful navigation to results
+    tracker.increment(handle, "people_searches")
 
     # Load existing URLs to avoid duplicates
     collected_urls = set()
@@ -198,6 +198,19 @@ def harvest_search_results(
             try:
                 card = result_cards.nth(i)
                 if not card.is_visible(): continue
+                
+                # 🟢 Human-like "Skimming" Pause
+                # Mimics a user looking at a result for a moment before moving to next
+                skim_delay = random.uniform(0.6, 1.8)
+                logger.debug(f"  [🔍] Skimming result {i+1}... ({skim_delay:.2f}s)")
+                
+                # Briefly hover to trigger any visual states/lazy loads
+                try:
+                    card.hover(timeout=2000)
+                except:
+                    pass
+                
+                time.sleep(skim_delay)
 
                 # Extract URL
                 link_el = card.locator('a[href*="/in/"]').first

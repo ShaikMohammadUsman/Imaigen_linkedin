@@ -19,13 +19,76 @@ SELECTORS = {
     "email": 'input#username',
     "password": 'input#password',
     "submit": 'button[type="submit"]',
+    "google_btn_iframe": 'iframe[title="Sign in with Google Button"]',
+    "google_email": 'input[type="email"]',
+    "google_password": 'input[type="password"]',
 }
+
+
+def google_login_flow(session: "AccountSession", config: dict):
+    """
+    Handles the 'Sign in with Google' flow. 
+    Note: This often triggers Google's bot detection or MFA.
+    """
+    page = session.page
+    logger.info(colored("🚀 Initiating Google SSO login sequence...", "yellow", attrs=["bold"]))
+    
+    try:
+        # 1. Click the Google Button (in iframe)
+        # Wait for iframe to be ready
+        page.wait_for_selector(SELECTORS["google_btn_iframe"], timeout=10000)
+        google_iframe = page.frame_locator(SELECTORS["google_btn_iframe"])
+        google_btn = google_iframe.locator('div[role="button"]').first
+        
+        # LinkedIn often uses a popup for Google login
+        try:
+            with page.context.expect_page(timeout=10000) as popup_info:
+                google_btn.click()
+            google_page = popup_info.value
+        except:
+             logger.info("Google login didn't open a popup. Checking for redirect...")
+             google_page = page # Maybe it redirected the main page
+        
+        google_page.wait_for_load_state("networkidle")
+        
+        logger.info("Google login page active. Entering credentials...")
+        
+        # 2. Enter Google Email
+        email_field = google_page.locator(SELECTORS["google_email"])
+        if email_field.is_visible():
+            email_field.fill(config["username"])
+            google_page.keyboard.press("Enter")
+        
+        # Wait for password field
+        google_page.wait_for_selector(SELECTORS["google_password"], timeout=15000)
+        google_page.locator(SELECTORS["google_password"]).fill(config["password"])
+        google_page.keyboard.press("Enter")
+        
+        # 3. Wait for popup to close and redirect back to LinkedIn
+        logger.info("Submitted Google credentials. Waiting for redirect...")
+        
+        # LinkedIn should now redirect the main page to the feed
+        page.wait_for_url(lambda l: "/feed" in l, timeout=60000)
+        return True
+        
+    except Exception as e:
+        logger.error(f"❌ Google Login Flow failed: {e}")
+        logger.info(colored("⚠️ PLEASE USE VNC (localhost:5900) to complete the login manually if needed.", "red", attrs=["bold"]))
+        # Give user time to intervene via VNC
+        try:
+            page.wait_for_url(lambda l: "/feed" in l, timeout=120000)
+            return True
+        except:
+            return False
 
 
 def playwright_login(session: "AccountSession"):
     page = session.page
     config = get_account_config(session.handle)
-    logger.info(colored("Fresh login sequence starting", "cyan") + f" for @{session.handle}")
+    # Default to google priority as requested
+    login_method = config.get("login_method", "google").lower()
+    
+    logger.info(colored("Fresh login sequence starting", "cyan") + f" for @{session.handle} (Priority Method: {login_method})")
 
     goto_page(
         session,
@@ -35,19 +98,60 @@ def playwright_login(session: "AccountSession"):
         to_scrape=False
     )
 
-    page.locator(SELECTORS["email"]).type(config["username"], delay=80)
-    session.wait(to_scrape=False)
-    page.locator(SELECTORS["password"]).type(config["password"], delay=80)
-    session.wait(to_scrape=False)
+    # 🟢 OPTION 1: Try Google Login First (Default Priority)
+    if login_method == "google":
+        logger.info("Attempting Google SSO login as first priority...")
+        if google_login_flow(session, config):
+            return
+        logger.warning("Google SSO failed or timed out. Falling back to direct LinkedIn login...")
 
-    goto_page(
-        session,
-        action=lambda: page.locator(SELECTORS["submit"]).click(),
-        expected_url_pattern="/feed",
-        timeout=40_000,
-        error_message="Login failed – no redirect to feed",
-        to_scrape=False
-    )
+    # 🟢 OPTION 2: Direct LinkedIn Login (Fallback)
+    logger.info("Proceeding with direct LinkedIn login credentials...")
+    import random
+    try:
+        # Check if username field is visible
+        if not page.locator(SELECTORS["email"]).is_visible():
+             # If we are here and method was 'linkedin', try google as last resort
+             if login_method != "google":
+                 logger.info("Direct fields missing. Trying Google as fallback...")
+                 google_login_flow(session, config)
+             return
+
+        # Human-like typing with randomized speed per character
+        username = config["username"]
+        for char in username:
+            page.locator(SELECTORS["email"]).type(char, delay=random.randint(50, 140))
+        
+        session.wait(to_scrape=False)
+        
+        password = config["password"]
+        for char in password:
+            page.locator(SELECTORS["password"]).type(char, delay=random.randint(60, 160))
+        
+        session.wait(to_scrape=False)
+
+        # Randomized mouse hover before click
+        submit_btn = page.locator(SELECTORS["submit"])
+        submit_btn.hover()
+        time.sleep(random.uniform(0.5, 1.2))
+        submit_btn.click()
+        
+        try:
+            # Short wait for immediate success
+            page.wait_for_url(lambda l: "/feed" in l, timeout=15000)
+            logger.info(colored("Direct Login Successful!", "green"))
+        except:
+            # If still on login page, wait for manual override (VNC) or slow redirect
+            logger.info("Waiting for manual intervention (MFA/ID Verification) via VNC...")
+            page.wait_for_url(lambda l: "/feed" in l, timeout=60000)
+
+    except Exception as e:
+        logger.debug(f"Direct login encounter a problem: {e}")
+        # One last desperate attempt at Google if we see the button
+        if page.locator(SELECTORS["google_btn_iframe"]).is_visible():
+            google_login_flow(session, config)
+        else:
+            raise e
 
 
 def build_playwright(storage_state=None):

@@ -39,6 +39,10 @@
         "people_searches": 12,
         "harvest_pages": 28,
         "harvested_cards": 47
+      },
+      "2026-W10": {
+        "people_searches": 1,
+        "harvest_pages": 1
       }
     },
     "monthly": {
@@ -46,6 +50,10 @@
         "people_searches": 12,
         "harvest_pages": 28,
         "harvested_cards": 47
+      },
+      "2026-03": {
+        "people_searches": 1,
+        "harvest_pages": 1
       }
     },
     "search_history": {
@@ -62,6 +70,10 @@
       "people_searches": 2,
       "harvest_pages": 10,
       "harvested_cards": 37
+    },
+    "2026-03-05": {
+      "people_searches": 1,
+      "harvest_pages": 1
     }
   },
   "usman@thescooter.ai": {
@@ -79,6 +91,10 @@
         "people_searches": 2,
         "harvest_pages": 1,
         "harvested_cards": 12
+      },
+      "2026-W10": {
+        "people_searches": 1,
+        "harvest_pages": 1
       }
     },
     "monthly": {
@@ -86,10 +102,47 @@
         "people_searches": 2,
         "harvest_pages": 1,
         "harvested_cards": 12
+      },
+      "2026-03": {
+        "people_searches": 1,
+        "harvest_pages": 1
       }
     },
     "search_history": {
-      "37d397d8faef7de9d95c44b001eb25aa": 1
+      "37d397d8faef7de9d95c44b001eb25aa": 1,
+      "e08dd6c5f4839f5baeb76bf4693aac53": 1
+    },
+    "2026-03-05": {
+      "people_searches": 1,
+      "harvest_pages": 1
+    }
+  },
+  "su5763292@gmail.com": {
+    "metadata": {
+      "first_seen": "2026-03-05",
+      "account_type": "new"
+    },
+    "2026-03-05": {
+      "people_searches": 1,
+      "harvest_pages": 4,
+      "harvested_cards": 28
+    },
+    "weekly": {
+      "2026-W10": {
+        "people_searches": 1,
+        "harvest_pages": 4,
+        "harvested_cards": 28
+      }
+    },
+    "monthly": {
+      "2026-03": {
+        "people_searches": 1,
+        "harvest_pages": 4,
+        "harvested_cards": 28
+      }
+    },
+    "search_history": {
+      "e08dd6c5f4839f5baeb76bf4693aac53": 4
     }
   }
 }
