@@ -29,7 +29,9 @@
                             peach: '#FFCCB3',    // Light Peach
                             input: '#F0F4FF',    // Light Blue Input Bg
                             text: '#1F2937',     // Dark Gray Text
-                            lightText: '#6B7280' // Light Gray Text
+                            lightText: '#6B7280', // Light Gray Text
+                            apollo: '#005a63',    // Apollo Teal
+                            apolloPeach: '#e0f2f1' // Apollo Light Teal
                         }
                     },
                     animation: {
@@ -183,6 +185,14 @@
                     <span class="text-sm font-bold">Review Queue</span>
                     <span id="queue-badge"
                         class="hidden bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full ml-auto">0</span>
+                </button>
+                <div class="my-2 border-t border-gray-100 opacity-50"></div>
+                <button onclick="switchTab('apollo')" id="tab-apollo"
+                    class="w-full text-left px-5 py-4 rounded-xl flex items-center gap-3 hover:bg-teal-50/50 transition-all text-gray-700">
+                    <i class="fa-solid fa-satellite-dish text-lg text-scooter-apollo"></i>
+                    <span class="text-sm font-bold">Apollo Discovery</span>
+                    <span
+                        class="bg-blue-100 text-blue-600 text-[8px] font-black px-1.5 py-0.5 rounded uppercase tracking-tighter ml-auto">New</span>
                 </button>
                 <button onclick="switchTab('campaign')" id="tab-campaign"
                     class="w-full text-left px-5 py-4 rounded-xl flex items-center gap-3 hover:bg-blue-50/50 transition-all text-gray-700">
@@ -472,6 +482,88 @@
                                 * These candidates will be queued for the messaging campaign.
                             </div>
                         </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW: APOLLO -->
+            <div id="view-apollo" class="view-section hidden max-w-4xl mx-auto animate-slide-up">
+
+                <div class="mb-8">
+                    <h2 class="text-3xl font-bold text-gray-800 mb-2">Apollo Lead Sourcing</h2>
+                    <p class="text-gray-500">Source verified emails and professional data from Apollo.io</p>
+                </div>
+
+                <!-- Input Card -->
+                <div class="bg-white rounded-3xl p-8 card-shadow border border-white mb-6 relative overflow-hidden">
+                    <div class="absolute top-0 right-0 w-32 h-32 bg-teal-50 rounded-bl-full z-0 opacity-50"></div>
+
+                    <div class="flex items-center gap-3 mb-6 relative z-10">
+                        <span
+                            class="bg-teal-100 text-scooter-apollo text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide">Step
+                            1</span>
+                        <h3 class="text-xl font-bold text-gray-800">Target Segment</h3>
+                    </div>
+
+                    <div class="space-y-6 relative z-10">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Apollo
+                                Search URL</label>
+                            <div class="relative group">
+                                <i
+                                    class="fa-solid fa-satellite absolute left-4 top-3.5 text-gray-400 group-focus-within:text-scooter-apollo transition-colors"></i>
+                                <input type="text" id="apollo-url"
+                                    placeholder="https://app.apollo.io/#/people?find_id=..."
+                                    class="w-full bg-scooter-input border-none rounded-xl pl-12 pr-4 py-3 text-sm text-gray-600 font-medium outline-none focus:ring-2 focus:ring-scooter-apollo/20 transition-all">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-6">
+                            <div>
+                                <label
+                                    class="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Daily
+                                    Unlock Limit</label>
+                                <div class="relative group">
+                                    <i
+                                        class="fa-solid fa-unlock-keyhole absolute left-4 top-3.5 text-gray-400 group-focus-within:text-scooter-apollo transition-colors"></i>
+                                    <input type="number" id="apollo-limit" value="50"
+                                        class="w-full bg-scooter-input border-none rounded-xl pl-12 pr-4 py-3 text-sm text-gray-700 font-bold outline-none focus:ring-2 focus:ring-scooter-apollo/20 transition-all">
+                                </div>
+                            </div>
+                            <div>
+                                <label
+                                    class="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Pages
+                                    to Scrape</label>
+                                <div class="relative group">
+                                    <i
+                                        class="fa-solid fa-copy absolute left-4 top-3.5 text-gray-400 group-focus-within:text-scooter-apollo transition-colors"></i>
+                                    <input type="number" id="apollo-pages" value="1"
+                                        class="w-full bg-scooter-input border-none rounded-xl pl-12 pr-4 py-3 text-sm text-gray-700 font-bold outline-none focus:ring-2 focus:ring-scooter-apollo/20 transition-all">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="pt-4">
+                            <button onclick="startApolloHarvest()"
+                                class="w-full bg-scooter-apollo hover:bg-black text-white font-bold py-4 rounded-xl shadow-lg shadow-teal-700/20 transform transition-all active:scale-[0.98] flex justify-center gap-3 items-center text-lg">
+                                <i class="fa-solid fa-bolt-lightning"></i> Extract & Verify Leads
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Info Card -->
+                <div
+                    class="bg-gradient-to-r from-teal-600 to-emerald-600 p-6 rounded-3xl text-white flex items-center gap-6 shadow-xl">
+                    <div
+                        class="w-16 h-16 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center flex-shrink-0 animate-float">
+                        <i class="fa-solid fa-address-card text-3xl"></i>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-lg mb-1">Direct Data Access</h4>
+                        <p class="text-sm text-teal-50 text-balance opacity-90">Apollo extraction automatically captures
+                            personal emails and professional phone numbers, bypassing the need for manual enrichment.
+                        </p>
                     </div>
                 </div>
             </div>
@@ -1044,6 +1136,35 @@
             // Force immediate usage update
             setTimeout(loadUsage, 1000);
             setTimeout(loadUsage, 3000);
+        }
+
+        async function startApolloHarvest() {
+            const handle = document.getElementById('handle-input').value;
+            const url = document.getElementById('apollo-url').value;
+            const limit = document.getElementById('apollo-limit').value;
+            const pages = document.getElementById('apollo-pages').value;
+
+            if (!url) return alert('Enter an Apollo Search URL!');
+
+            setStatus('Sourcing...', 'bg-scooter-apollo');
+
+            const query = new URLSearchParams({
+                handle,
+                search_url: url,
+                limit,
+                pages
+            });
+
+            await fetch(`/api/apollo_harvest?${query.toString()}`, { method: 'POST' });
+
+            // Show terminal
+            const terminal = document.querySelector('.absolute.bottom-6');
+            if (terminal) {
+                terminal.classList.remove('translate-y-[85%]');
+                terminal.classList.add('translate-y-0');
+            }
+
+            connectLogs();
         }
 
         async function startCampaign() {
