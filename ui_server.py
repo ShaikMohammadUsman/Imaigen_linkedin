@@ -101,6 +101,41 @@ async def start_harvest(
     
     return {"status": "started", "pid": current_process.pid}
 
+@app.post("/api/apollo_harvest")
+async def start_apollo_harvest(
+    handle: str,
+    search_url: str,
+    limit: int = 50,
+    pages: int = 1
+):
+    global current_process
+    if current_process and current_process.returncode is None:
+        return JSONResponse({"status": "error", "message": "A process is already running."}, status_code=400)
+    
+    cmd = [
+        sys.executable, "-u", "apollo_entry.py",
+        "--handle", handle,
+        "--search-url", search_url,
+        "--limit", str(limit),
+        "--pages", str(pages)
+    ]
+    
+    current_process = await asyncio.create_subprocess_exec(
+        *cmd,
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE,
+        cwd=str(BASE_DIR)
+    )
+    
+    msg = f"🛰️ Launching Apollo Source: {search_url} (Limit: {limit})"
+    print(f"[SERVER] {msg}")
+    await log_queue.put(msg)
+    
+    asyncio.create_task(read_stream(current_process.stdout))
+    asyncio.create_task(read_stream(current_process.stderr))
+    
+    return {"status": "started", "pid": current_process.pid}
+
 @app.get("/api/scraped_data")
 def get_scraped_data():
     csv_path = ASSETS_DIR / "inputs" / "harvested_urls.csv"
