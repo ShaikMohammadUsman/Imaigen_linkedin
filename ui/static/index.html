@@ -208,9 +208,13 @@
                 </div>
                 <div class="relative group">
                     <i
-                        class="fa-solid fa-envelope absolute left-3 top-3.5 text-gray-400 group-focus-within:text-scooter-orange transition-colors"></i>
-                    <input type="email" id="handle-input" value="vishnu02.tech@gmail.com"
-                        class="w-full bg-scooter-input border-none rounded-xl pl-10 pr-4 py-3 text-sm font-medium text-gray-700 outline-none focus:ring-2 focus:ring-scooter-peach transition-all shadow-inner">
+                        class="fa-solid fa-user-circle absolute left-3 top-3.5 text-gray-400 group-focus-within:text-scooter-orange transition-colors"></i>
+                    <select id="handle-input"
+                        class="w-full bg-scooter-input border-none rounded-xl pl-10 pr-4 py-3 text-sm font-bold text-gray-800 outline-none focus:ring-2 focus:ring-scooter-peach transition-all shadow-inner cursor-pointer appearance-none">
+                        <!-- Populated via JS -->
+                    </select>
+                    <i
+                        class="fa-solid fa-chevron-down absolute right-3 top-4 text-[10px] text-gray-400 pointer-events-none"></i>
                 </div>
             </div>
 
@@ -955,11 +959,11 @@
                                     <div class="space-y-1.5">
                                         <label
                                             class="text-[9px] font-black text-gray-500 uppercase tracking-widest ml-1">Daily
-                                            Enrichment Cap</label>
+                                            Cap</label>
                                         <div class="relative">
                                             <i
                                                 class="fa-solid fa-gauge-high absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
-                                            <input type="number" id="daily-limit" value="10"
+                                            <input type="number" id="campaign-daily-limit" value="10"
                                                 class="w-full bg-black/20 border border-white/10 text-white rounded-2xl py-3 pl-10 pr-4 text-xs font-bold focus:border-scooter-green/50 outline-none transition-all">
                                         </div>
                                     </div>
@@ -969,7 +973,7 @@
                                             Mode</label>
                                         <div
                                             class="flex items-center h-[46px] bg-black/20 border border-white/10 rounded-2xl px-4 gap-3">
-                                            <input type="checkbox" id="enrich-only" checked
+                                            <input type="checkbox" id="campaign-enrich-only" checked
                                                 class="w-4 h-4 rounded border-white/20 bg-transparent text-scooter-green focus:ring-scooter-green"
                                                 onchange="document.getElementById('note-section').style.opacity = this.checked ? '0.3' : '1'">
                                             <span class="text-xs font-bold text-gray-300">Enrichment Only</span>
@@ -1170,10 +1174,18 @@
                             status.
                         </p>
                     </div>
-                    <button onclick="loadHealthReport()"
-                        class="bg-white hover:bg-gray-50 text-scooter-charcoal border border-gray-200 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all shadow-sm flex items-center">
-                        <i class="fa-solid fa-rotate mr-2 text-scooter-green"></i> Refresh Stats
-                    </button>
+                    <div class="flex items-center gap-3">
+                        <button onclick="runCheckpoint()"
+                            class="bg-scooter-charcoal hover:bg-black text-white px-5 py-2.5 rounded-xl text-sm font-black tracking-widest transition-all shadow-xl shadow-gray-400/20 flex items-center group">
+                            <i
+                                class="fa-solid fa-user-shield mr-2 text-scooter-orange group-hover:scale-110 transition-transform"></i>
+                            MANUAL AUTH CHECKPOINT
+                        </button>
+                        <button onclick="loadHealthReport()"
+                            class="bg-white hover:bg-gray-50 text-scooter-charcoal border border-gray-200 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all shadow-sm flex items-center">
+                            <i class="fa-solid fa-rotate mr-2 text-scooter-green"></i> Refresh Stats
+                        </button>
+                    </div>
                 </div>
 
                 <div id="health-report-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -1278,11 +1290,19 @@
             }
 
             // --- HEALTH CENTER ---
-            // --- HEALTH CENTER ---
             async function loadHealthReport() {
                 const container = document.getElementById('health-report-container');
                 const alertBadge = document.getElementById('health-alert-badge');
+                const refreshBtn = document.querySelector('button[onclick="loadHealthReport()"]');
+
                 if (!container) return;
+
+                // Visual feedback for refresh
+                if (refreshBtn) {
+                    const icon = refreshBtn.querySelector('i');
+                    icon.classList.add('fa-spin');
+                    refreshBtn.classList.add('opacity-50', 'pointer-events-none');
+                }
 
                 try {
                     const res = await fetch('/api/health_report');
@@ -1309,6 +1329,10 @@
                                             <p class="text-[10px] text-gray-400 font-medium uppercase tracking-tighter mt-0.5">Automated LinkedIn Account</p>
                                         </div>
                                         <div class="flex flex-col items-end">
+                                            <button onclick="resetAccountHealth('${acc.handle}')" title="Reset Health Status" 
+                                                class="absolute top-2 right-2 p-2 text-gray-300 hover:text-blue-500 transition-colors opacity-0 group-hover:opacity-100">
+                                                <i class="fa-solid fa-undo text-xs"></i>
+                                            </button>
                                             <span class="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black tracking-widest uppercase ${statusColor}">
                                                 <span class="w-1.5 h-1.5 rounded-full ${statusDot}"></span>
                                                 ${acc.status}
@@ -1348,6 +1372,12 @@
                                             <span class="font-black ${metrics.timeouts > 2 ? 'text-orange-600 bg-orange-50 px-1.5 rounded' : 'text-gray-400'}">${metrics.timeouts || 0}</span>
                                         </div>
                                     </div>
+                                    ${isRestricted ? `
+                                    <button onclick="resetAccountHealth('${acc.handle}')" 
+                                        class="w-full mt-2 py-2 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 text-[10px] font-black uppercase tracking-widest transition-all border border-red-100">
+                                        Reset Health Stats
+                                    </button>
+                                    ` : ''}
                                     <i class="fa-solid ${isHealthy ? 'fa-shield-check' : (isRestricted ? 'fa-user-lock' : 'fa-triangle-exclamation')} absolute -bottom-4 -right-4 text-7xl text-gray-100 opacity-50 transform -rotate-12 group-hover:scale-110 transition-transform"></i>
                                 `;
                             container.appendChild(card);
@@ -1363,7 +1393,46 @@
                 } catch (e) {
                     console.error(e);
                     container.innerHTML = '<div class="col-span-full py-10 text-center text-red-500">Error loading health report.</div>';
+                } finally {
+                    if (refreshBtn) {
+                        setTimeout(() => {
+                            refreshBtn.querySelector('i').classList.remove('fa-spin');
+                            refreshBtn.classList.remove('opacity-50', 'pointer-events-none');
+                        }, 500);
+                    }
                 }
+            }
+
+            async function resetAccountHealth(handle) {
+                if (!confirm(`Reset health status for ${handle}? This will clear TODAY'S restrictions/captchas.`)) return;
+                try {
+                    const res = await fetch(`/api/reset_health?handle=${encodeURIComponent(handle)}`, { method: 'POST' });
+                    if (res.ok) {
+                        loadHealthReport();
+                        loadUsage();
+                    }
+                } catch (e) { console.error(e); }
+            }
+
+            async function populateAccounts() {
+                try {
+                    const res = await fetch('/api/accounts');
+                    const accounts = await res.json();
+                    const select = document.getElementById('handle-input');
+                    if (!select) return;
+
+                    const currentVal = select.value;
+                    select.innerHTML = '';
+                    accounts.forEach(handle => {
+                        const opt = document.createElement('option');
+                        opt.value = handle;
+                        opt.textContent = handle;
+                        select.appendChild(opt);
+                    });
+                    if (currentVal && accounts.includes(currentVal)) {
+                        select.value = currentVal;
+                    }
+                } catch (e) { console.error(e); }
             }
 
             // --- ROLES LOGIC ---
@@ -1620,12 +1689,46 @@
                 await launchCampaignAction();
             }
 
+            async function runCheckpoint() {
+                const handle = document.getElementById('handle-input').value;
+                if (!handle) return alert("❌ Please enter or select a LinkedIn Handle first.");
+
+                if (!confirm(`🛡️ Start Manual Auth Checkpoint for @${handle}?\n\nThis will open a browser window for you to login manually. Use this if the bot is failing to login or needs Google/LinkedIn verification.`)) return;
+
+                setStatus('Initializing Checkpoint...', 'bg-scooter-orange');
+                try {
+                    const res = await fetch('/api/checkpoint', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ handle })
+                    });
+                    const data = await res.json();
+                    if (data.status === 'started') {
+                        alert("🚀 Checkpoint Started!\n\nPlease check your terminal/VNC and complete the login in the browser window that opens.");
+                        connectLogs();
+                    } else {
+                        alert("❌ Error: " + (data.message || "Could not start checkpoint"));
+                    }
+                } catch (e) {
+                    console.error(e);
+                    alert("❌ Failed to communicate with server.");
+                }
+            }
+
             async function launchCampaignAction() {
                 const handle = document.getElementById('handle-input').value;
                 if (!handle) return alert("Enter LinkedIn Handle");
 
-                const enrichOnly = document.getElementById('enrich-only').checked;
-                const limit = document.getElementById('daily-limit').value || 10;
+                const isCampaignView = !document.getElementById('view-campaign').classList.contains('hidden');
+
+                const enrichOnly = isCampaignView
+                    ? document.getElementById('campaign-enrich-only').checked
+                    : document.getElementById('enrich-only').checked;
+
+                const limit = isCampaignView
+                    ? (document.getElementById('campaign-daily-limit').value || 10)
+                    : (document.getElementById('daily-limit').value || 10);
+
                 const note = document.getElementById('connection-note').value;
 
                 const selectedUrls = Array.from(document.getElementsByName('queue-select'))
@@ -1688,12 +1791,157 @@
                 const status = document.getElementById('filter-status').value;
                 const source = document.getElementById('filter-source').value;
                 const filtered = allPoolData.filter(row => {
-                    const rMatch = role === 'all' || row.Role === role;
-                    const sMatch = status === 'all' || row.Status === status;
-                    const srcMatch = source === 'all' || row.Source === source;
+                    const r = String(row.Role || "").trim();
+                    const s = String(row.Status || "").trim();
+                    const src = String(row.Source || "").trim();
+
+                    const rMatch = role === 'all' || r === role;
+                    const sMatch = status === 'all' || s === status;
+                    const srcMatch = source === 'all' || src === source;
                     return rMatch && sMatch && srcMatch;
                 });
                 renderResultsTable(filtered);
+            }
+            function showCandidateDetails(url) {
+                const row = allPoolData.find(r => r.URL === url);
+                if (!row) return;
+
+                const modal = document.getElementById('details-modal');
+                const content = document.getElementById('details-content');
+
+                // Format Experience, Certs, Projects, Education
+                const expHtml = (row.Experience || []).map(e => `
+                    <div class="mb-4 border-l-4 border-scooter-green pl-4 last:mb-0">
+                        <div class="font-bold text-sm text-gray-900">${e.title}</div>
+                        <div class="text-[12px] text-gray-600 font-medium">${e.company} | ${e.dates}</div>
+                        ${e.company_description ? `<div class="text-[11px] text-gray-400 mt-1 italic">${e.company_description}</div>` : ''}
+                    </div>
+                `).join('');
+
+                const eduHtml = (row.Education || []).map(e => `
+                    <div class="mb-4 border-l-4 border-blue-400 pl-4 last:mb-0">
+                        <div class="font-bold text-sm text-gray-900">${e.school_name}</div>
+                        <div class="text-[12px] text-gray-600 font-medium">${e.degree_name || ''} ${e.field_of_study ? 'in ' + e.field_of_study : ''}</div>
+                    </div>
+                `).join('');
+
+                const certHtml = (row.Certifications || []).map(c => `
+                    <div class="mb-2 last:mb-0 flex items-center gap-2">
+                        <i class="fa-solid fa-certificate text-scooter-orange text-xs"></i>
+                        <span class="text-xs font-bold text-gray-800">${c.name}</span>
+                        ${c.authority ? `<span class="text-[10px] text-gray-500 opacity-70"> • ${c.authority}</span>` : ''}
+                    </div>
+                `).join('');
+
+                const projHtml = (row.Projects || []).map(p => `
+                    <div class="mb-4 last:mb-0">
+                        <div class="text-xs font-black text-blue-600 uppercase tracking-widest mb-1">${p.title}</div>
+                        ${p.description ? `<div class="text-[11px] text-gray-600 line-clamp-2">${p.description}</div>` : ''}
+                    </div>
+                `).join('');
+
+                content.innerHTML = `
+                    <div class="flex items-start gap-6 mb-8 bg-gray-50/50 p-6 rounded-3xl border border-gray-100">
+                        ${row.Picture ? `<img src="${row.Picture}" class="w-24 h-24 rounded-2xl shadow-lg border-4 border-white">` : `<div class="w-24 h-24 rounded-2xl bg-white border-4 border-gray-50 shadow-inner flex items-center justify-center text-3xl font-black text-gray-200">${row['Full Name'].charAt(0)}</div>`}
+                        <div class="flex-1">
+                            <h2 class="text-2xl font-black text-gray-900 mb-1 leading-tight">${row['Full Name']}</h2>
+                            <p class="text-sm font-bold text-scooter-green mb-3">${row.Headline}</p>
+                            <div class="flex flex-wrap gap-2">
+                                <span class="bg-white border border-gray-200 px-3 py-1 rounded-full text-[10px] font-black tracking-widest uppercase text-gray-500 shadow-sm"><i class="fa-solid fa-location-dot mr-1"></i> ${row.Location} ${row.State ? '• ' + row.State : ''}</span>
+                                <span class="bg-white border border-gray-200 px-3 py-1 rounded-full text-[10px] font-black tracking-widest uppercase text-blue-500 shadow-sm"><i class="fa-brands fa-linkedin mr-1"></i> Profile Link</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-12 gap-8">
+                        <div class="col-span-8 space-y-8">
+                            <div>
+                                <h3 class="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+                                    <span class="w-6 h-px bg-gray-200"></span> About & Summary
+                                </h3>
+                                <p class="text-sm text-gray-700 leading-relaxed bg-white p-4 rounded-2xl border border-gray-50 italic">"${row.About || 'No summary provided.'}"</p>
+                            </div>
+
+                            <div>
+                                <h3 class="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+                                    <span class="w-6 h-px bg-gray-200"></span> Experience History
+                                </h3>
+                                <div class="space-y-6">
+                                    ${expHtml || '<div class="text-xs text-gray-400">No experience details available.</div>'}
+                                </div>
+                            </div>
+
+                            <div>
+                                <h3 class="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+                                    <span class="w-6 h-px bg-gray-200"></span> Education Background
+                                </h3>
+                                <div class="space-y-6">
+                                    ${eduHtml || '<div class="text-xs text-gray-400">No education details.</div>'}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-span-4 space-y-8">
+                            <div>
+                                <h3 class="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+                                    <span class="w-6 h-px bg-gray-200"></span> Lead Activation
+                                </h3>
+                                <div class="bg-scooter-green/5 p-5 rounded-3xl border border-scooter-green/20 space-y-3">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-8 h-8 rounded-xl bg-white flex items-center justify-center border border-gray-100 shadow-sm text-scooter-green"><i class="fa-solid fa-envelope"></i></div>
+                                        <div>
+                                            <div class="text-[9px] font-black text-gray-400 uppercase tracking-widest">Email Address</div>
+                                            <div class="text-xs font-bold text-gray-800 truncate max-w-[150px]">${row.Email || 'Request from Apollo'}</div>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-8 h-8 rounded-xl bg-white flex items-center justify-center border border-gray-100 shadow-sm text-scooter-orange"><i class="fa-solid fa-phone"></i></div>
+                                        <div>
+                                            <div class="text-[9px] font-black text-gray-400 uppercase tracking-widest">Phone Number</div>
+                                            <div class="text-xs font-bold text-gray-800">${row.Phone || 'Searching...'}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                             <div>
+                                <h3 class="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+                                    <span class="w-6 h-px bg-gray-200"></span> Projects
+                                </h3>
+                                <div class="bg-blue-50/30 p-5 rounded-3xl border border-blue-100/50">
+                                    ${projHtml || '<div class="text-xs text-gray-400">No project info.</div>'}
+                                </div>
+                            </div>
+
+                            <div>
+                                <h3 class="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+                                    <span class="w-6 h-px bg-gray-200"></span> Certifications
+                                </h3>
+                                <div class="bg-orange-50/30 p-5 rounded-3xl border border-orange-100/50">
+                                    ${certHtml || '<div class="text-xs text-gray-400">No certification info.</div>'}
+                                </div>
+                            </div>
+
+                            <div>
+                                <h3 class="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+                                    <span class="w-6 h-px bg-gray-200"></span> Key Skills
+                                </h3>
+                                <div class="flex flex-wrap gap-1.5">
+                                    ${(row.Skills || "").split(',').map(s => s.trim()).filter(s => s).map(s => `<span class="bg-white px-2 py-1 rounded-lg border border-gray-100 text-[10px] font-bold text-gray-600 shadow-sm">${s}</span>`).join('') || '<div class="text-xs text-gray-400">No skills.</div>'}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+            }
+
+            function closeDetailsModal() {
+                const modal = document.getElementById('details-modal');
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
             }
 
             function renderResultsTable(data) {
@@ -1794,7 +2042,10 @@
                             <td class="p-4 w-[12%] text-center">
                                 <span class="px-2.5 py-1 rounded-full text-[9px] font-black uppercase border ${statusClass}">${s}</span>
                             </td>
-                            <td class="p-4 w-[9%] text-right">
+                            <td class="p-4 w-[9%] text-right flex items-center justify-end gap-1">
+                                <button onclick="showCandidateDetails('${row.URL}')" class="p-2 bg-gray-50 hover:bg-scooter-green/10 text-gray-400 hover:text-scooter-green rounded-lg transition-all" title="View Full Details">
+                                    <i class="fa-solid fa-eye text-[10px]"></i>
+                                </button>
                                 <button onclick="alert('Coming soon: Direct Message')" class="p-2 bg-gray-50 hover:bg-scooter-green/10 text-gray-400 hover:text-scooter-green rounded-lg transition-all" title="Send Message">
                                     <i class="fa-solid fa-paper-plane text-[10px]"></i>
                                 </button>
@@ -1813,29 +2064,55 @@
                 const source = document.getElementById('filter-source').value;
 
                 const filtered = allPoolData.filter(row => {
-                    const rMatch = role === 'all' || row.Role === role;
-                    const sMatch = status === 'all' || row.Status === status;
-                    const srcMatch = source === 'all' || row.Source === source;
+                    const r = String(row.Role || "").trim();
+                    const s = String(row.Status || "").trim();
+                    const src = String(row.Source || "").trim();
+
+                    const rMatch = role === 'all' || r === role;
+                    const sMatch = status === 'all' || s === status;
+                    const srcMatch = source === 'all' || src === source;
                     return rMatch && sMatch && srcMatch;
                 });
 
-                if (filtered.length === 0) return alert("No matching data for current filters");
+                if (filtered.length === 0) {
+                    console.log("Filter Debug:", { role, status, source, total: allPoolData.length });
+                    return alert(`No matching data for current filters.\nTotal candidates in pool: ${allPoolData.length}\nTry setting filters to "All"`);
+                }
 
-                const headers = ["Full Name", "LinkedIn URL", "Source", "Role", "Current Company", "Location", "Status", "Headline", "Email", "Phone"];
+                const headers = ["Full Name", "LinkedIn URL", "Source", "Role", "Current Company", "Location", "State", "Country", "Status", "Headline", "Skills", "Full Experience", "Certifications", "Projects", "Email", "Phone", "About"];
                 const csvRows = [headers.join(',')];
 
+                const clean = (val) => {
+                    if (val === null || val === undefined) return '""';
+                    let str = String(val).replace(/"/g, '""');
+                    return `"${str}"`;
+                };
+
                 filtered.forEach(row => {
+                    // Flatten list objects to strings
+                    const skills = row.Skills || "";
+                    const exp = (row.Experience || []).map(e => `${e.title} @ ${e.company} (${e.dates})`).join(' | ');
+                    const certs = (row.Certifications || []).map(c => `${c.name} (${c.authority || ''})`).join(' | ');
+                    const projs = (row.Projects || []).map(p => p.title).join(' | ');
+
                     const values = [
-                        `"${row['Full Name'] || ''}"`,
-                        `"${row['LinkedIn URL'] || row.URL || ''}"`,
-                        `"${row.Source || ''}"`,
-                        `"${row.Role || ''}"`,
-                        `"${row['Current Company'] || ''}"`,
-                        `"${row.Location || ''}"`,
-                        `"${row.Status || ''}"`,
-                        `"${(row.Headline || '').replace(/"/g, '""')}"`,
-                        `"${row.Email || ''}"`,
-                        `"${row.Phone || ''}"`
+                        clean(row['Full Name']),
+                        clean(row['LinkedIn URL'] || row.URL),
+                        clean(row.Source),
+                        clean(row.Role),
+                        clean(row['Current Company']),
+                        clean(row.Location),
+                        clean(row.State),
+                        clean(row.Country),
+                        clean(row.Status),
+                        clean(row.Headline),
+                        clean(skills),
+                        clean(exp),
+                        clean(certs),
+                        clean(projs),
+                        clean(row.Email),
+                        clean(row.Phone),
+                        clean(row.About)
                     ];
                     csvRows.push(values.join(','));
                 });
@@ -1989,7 +2266,12 @@
                         </td>
                         <td class="px-4 py-4 text-right align-top shrink-0">
                             <div class="flex flex-col items-end gap-3">
-                                <span class="text-[8px] font-black uppercase px-2 py-1 rounded-full ${statusClass} border tracking-tighter shadow-sm">${row['Status']}</span>
+                                <div class="flex items-center gap-1">
+                                    <button onclick="showCandidateDetails('${row['URL'] || row['LinkedIn URL']}')" class="p-1.5 bg-white hover:bg-scooter-green/10 text-gray-300 hover:text-scooter-green border border-gray-100 rounded-lg shadow-sm transition-all" title="Review Intelligence">
+                                        <i class="fa-solid fa-eye text-[9px]"></i>
+                                    </button>
+                                    <span class="text-[8px] font-black uppercase px-2 py-1 rounded-full ${statusClass} border tracking-tighter shadow-sm">${row['Status']}</span>
+                                </div>
                                 <a href="${row['URL']}" target="_blank" class="flex items-center gap-2 text-[10px] font-bold text-gray-400 hover:text-scooter-green transition-all bg-white px-3 py-1.5 rounded-lg border border-gray-100 shadow-sm hover:shadow-md">
                                     PROFILE <i class="fa-solid fa-external-link-alt text-[9px]"></i>
                                 </a>
@@ -2139,8 +2421,11 @@
                         loadUsage();
                         loadQueue();
                         loadResults();
+                        loadHealthReport();
                     });
                 }
+
+                populateAccounts();
 
                 // Default view
                 switchTab('harvest');
@@ -2151,6 +2436,36 @@
                 setInterval(loadUsage, 15000);
             });
         </script>
+        <!-- Candidate Details Modal -->
+        <div id="details-modal"
+            class="fixed inset-0 bg-gray-900/40 backdrop-blur-md hidden items-center justify-center z-[100] p-4 animate-in fade-in duration-300">
+            <div
+                class="bg-white rounded-[40px] shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col border border-white relative translate-y-0 animate-in slide-in-from-bottom-8 duration-500">
+                <div
+                    class="flex items-center justify-between p-8 border-b border-gray-100 bg-white/50 sticky top-0 backdrop-blur-sm z-10">
+                    <div class="flex items-center gap-3">
+                        <div class="w-1.5 h-6 bg-scooter-green rounded-full"></div>
+                        <h3 class="text-xl font-black text-gray-900 tracking-tight">Profile Intelligence</h3>
+                    </div>
+                    <button onclick="closeDetailsModal()"
+                        class="w-10 h-10 rounded-full bg-gray-50 hover:bg-gray-100 text-gray-400 hover:text-gray-900 flex items-center justify-center transition-all group">
+                        <i class="fa-solid fa-xmark text-sm group-hover:rotate-90 transition-transform"></i>
+                    </button>
+                </div>
+
+                <div class="overflow-y-auto flex-1 p-10 custom-scrollbar" id="details-content">
+                    <!-- Populated via JS -->
+                </div>
+
+                <div class="p-6 bg-gray-50/50 border-t border-gray-100 flex justify-end gap-3 rounded-b-[40px]">
+                    <button onclick="closeDetailsModal()"
+                        class="px-8 py-3 rounded-2xl bg-white border border-gray-200 text-gray-400 text-xs font-black uppercase tracking-widest hover:border-gray-300 transition-all">Close</button>
+                    <button
+                        class="px-8 py-3 rounded-2xl bg-scooter-green text-white text-xs font-black uppercase tracking-widest hover:shadow-lg hover:shadow-scooter-green/30 transition-all">Select
+                        for Campaign</button>
+                </div>
+            </div>
+        </div>
 </body>
 
 </html>

@@ -1,0 +1,138 @@
+2026-03-10 18:47:23,222 - ClayCLI - INFO - [1m[36m🚀 Initializing Clay Harvest for usman@thescooter.ai[0m
+2026-03-10 18:47:24,052 - ClaySession - INFO - [36m🚀 Attempting to launch Clay Browser (Handle: usman@thescooter.ai)...[0m
+2026-03-10 18:47:29,067 - ClaySession - INFO - [32m✅ Success! Connected to Chrome 🌐[0m
+2026-03-10 18:47:29,077 - ClaySession - INFO - Checking Clay session state...
+2026-03-10 18:47:37,540 - ClaySession - INFO - [1m[32m✅ Clay Session Verified & Ready.[0m
+2026-03-10 18:47:37,541 - ClayHarvester - INFO - [34m📡 Navigating to Clay Workbook: https://app.clay.com/workspaces/1039340/w/enrich-people?conversationId=cc_0tbopzgMvECDqJcb5PQ&tableId=t_0tboq5wAXFzdboBSK9z&viewId=gv_0tboq5x2pp8ux4kqBfN&workbookId=wb_0tboq5vkunNcbqFk67B[0m
+2026-03-10 18:47:55,575 - ClayHarvester - INFO - 🔭 Scanning the Clay table...
+2026-03-10 18:47:56,521 - ClayHarvester - ERROR - [31m❌ Could not find any rows in the Clay table.[0m
+2026-03-10 18:47:56,535 - ClayCLI - WARNING - [33m⚠️ Task finished but no leads were captured. Check logs/screenshots.[0m
+2026-03-10 18:50:26,494 - ClayCLI - INFO - [1m[36m🚀 Initializing Clay Harvest for usman@thescooter.ai[0m
+2026-03-10 18:50:27,179 - ClaySession - INFO - [36m🚀 Attempting to launch Clay Browser (Handle: usman@thescooter.ai)...[0m
+2026-03-10 18:50:30,882 - ClaySession - INFO - [32m✅ Success! Connected to Chrome 🌐[0m
+2026-03-10 18:50:30,890 - ClaySession - INFO - Checking Clay session state...
+2026-03-10 18:50:33,028 - ClaySession - INFO - [1m[32m✅ Clay Session Verified & Ready.[0m
+2026-03-10 18:50:33,028 - ClayHarvester - INFO - [34m📡 Navigating to Clay Workbook: https://app.clay.com/workspaces/1039340/w/enrich-people?conversationId=cc_0tbopzgMvECDqJcb5PQ&tableId=t_0tboq5wAXFzdboBSK9z&viewId=gv_0tboq5x2pp8ux4kqBfN&workbookId=wb_0tboq5vkunNcbqFk67B[0m
+2026-03-10 18:50:53,145 - ClayHarvester - INFO - 🔭 Scanning the Clay table...
+2026-03-10 18:50:53,898 - ClayHarvester - ERROR - [31m❌ Could not find any rows in the Clay table.[0m
+2026-03-10 18:50:53,907 - ClayCLI - WARNING - [33m⚠️ Task finished but no leads were captured. Check logs/screenshots.[0m
+2026-03-10 18:52:02,339 - ClayCLI - INFO - [1m[36m🚀 Initializing Clay Harvest for usman@thescooter.ai[0m
+2026-03-10 18:52:03,153 - ClaySession - INFO - [36m🚀 Attempting to launch Clay Browser (Handle: usman@thescooter.ai)...[0m
+2026-03-10 18:52:05,786 - ClaySession - INFO - [32m✅ Success! Connected to Chrome 🌐[0m
+2026-03-10 18:52:05,799 - ClaySession - INFO - Checking Clay session state...
+2026-03-10 18:52:07,918 - ClaySession - INFO - [1m[32m✅ Clay Session Verified & Ready.[0m
+2026-03-10 18:52:07,918 - ClayHarvester - INFO - [34m📡 Navigating to Clay Workbook: https://app.clay.com/workspaces/1039340/w/enrich-people?conversationId=cc_0tbopzgMvECDqJcb5PQ&tableId=t_0tboq5wAXFzdboBSK9z&viewId=gv_0tboq5x2pp8ux4kqBfN&workbookId=wb_0tboq5vkunNcbqFk67B[0m
+2026-03-10 18:52:29,763 - ClayHarvester - INFO - 🔭 Scanning the Clay table...
+2026-03-10 18:52:30,545 - ClayHarvester - ERROR - [31m❌ Could not find any rows in the Clay table.[0m
+2026-03-10 18:52:30,555 - ClayCLI - WARNING - [33m⚠️ Task finished but no leads were captured. Check logs/screenshots.[0m
+2026-03-10 18:53:09,048 - ClayCLI - INFO - [1m[36m🚀 Initializing Clay Harvest for usman@thescooter.ai[0m
+2026-03-10 18:53:09,690 - ClaySession - INFO - [36m🚀 Attempting to launch Clay Browser (Handle: usman@thescooter.ai)...[0m
+2026-03-10 18:53:12,650 - ClaySession - INFO - [32m✅ Success! Connected to Chrome 🌐[0m
+2026-03-10 18:53:12,661 - ClaySession - INFO - Checking Clay session state...
+2026-03-10 18:53:24,852 - ClaySession - INFO - Current Clay URL: https://app.clay.com/
+2026-03-10 18:53:24,889 - ClaySession - INFO - ✅ No login required. Proceeding to workbook...
+2026-03-10 18:53:24,889 - ClaySession - INFO - [1m[32m✅ Clay Session Verified & Ready.[0m
+2026-03-10 18:53:24,889 - ClayHarvester - INFO - [34m📡 Navigating to Clay Workbook: https://app.clay.com/workspaces/1039340/w/enrich-people?conversationId=cc_0tbopzgMvECDqJcb5PQ&tableId=t_0tboq5wAXFzdboBSK9z&viewId=gv_0tboq5x2pp8ux4kqBfN&workbookId=wb_0tboq5vkunNcbqFk67B[0m
+2026-03-10 18:53:46,429 - ClayHarvester - INFO - 🔭 Scanning the Clay table...
+2026-03-10 18:53:47,150 - ClayHarvester - ERROR - [31m❌ Could not find any rows in the Clay table.[0m
+2026-03-10 18:53:47,157 - ClayCLI - WARNING - [33m⚠️ Task finished but no leads were captured. Check logs/screenshots.[0m
+2026-03-10 18:55:02,161 - ClayCLI - INFO - [1m[36m🚀 Initializing Clay Harvest for usman@thescooter.ai[0m
+2026-03-10 18:55:02,885 - ClaySession - INFO - [36m🚀 Attempting to launch Clay Browser (Handle: usman@thescooter.ai)...[0m
+2026-03-10 18:55:05,745 - ClaySession - INFO - [32m✅ Success! Connected to Chrome 🌐[0m
+2026-03-10 18:55:05,754 - ClaySession - INFO - Checking Clay session state...
+2026-03-10 18:55:07,965 - ClaySession - INFO - 🔭 Waiting for session or login screen...
+2026-03-10 18:55:37,977 - ClaySession - WARNING - ⚠️ Page load check timeout: Page.wait_for_selector: Timeout 30000ms exceeded.
+Call log:
+  - waiting for locator("text='Welcome back', text='Sign in', text='session has expired', button:has-text('Google'), text='Workspaces', [data-row-index], .clay-table") to be visible
+    - waiting for" https://api.clay.com/v3/logout?expired=true&redirect_to=workspaces" navigation to finish...
+    - navigated to "https://app.clay.com/?expired=true&redirect_to=workspaces"
+
+2026-03-10 18:55:37,978 - ClaySession - INFO - Current Clay URL: https://app.clay.com/?expired=true&redirect_to=workspaces
+2026-03-10 18:55:37,993 - ClaySession - INFO - [1m[33m🔑 LOGIN DETECTED: Opening manual entry mode...[0m
+2026-03-10 18:55:37,995 - ClaySession - INFO - Clicking Google SSO button...
+2026-03-10 18:55:38,413 - ClaySession - INFO - [1m[35m⏳ Please login manually in the browser window (Google SSO).[0m
+2026-03-10 19:00:38,425 - ClayCLI - ERROR - [1m[31m❌ Critical Failure during harvest: Authentication Failed. Could not detect Clay Session.[0m
+2026-03-11 14:03:38,838 - ClayCLI - INFO - 🚀 Initializing Clay Harvest for usman@thescooter.ai
+2026-03-11 14:03:39,676 - ClaySession - INFO - 🚀 Attempting to launch Clay Browser (Handle: usman@thescooter.ai)...
+2026-03-11 14:03:44,628 - ClaySession - INFO - ✅ Success! Connected to Chrome 🌐
+2026-03-11 14:03:44,637 - ClaySession - INFO - Checking Clay session state...
+2026-03-11 14:03:47,996 - ClaySession - INFO - 🔭 Waiting for session or login screen...
+2026-03-11 14:04:18,020 - ClaySession - WARNING - ⚠️ Page load check timeout: Page.wait_for_selector: Timeout 30000ms exceeded.
+Call log:
+  - waiting for locator("text='Welcome back', text='Sign in', text='session has expired', button:has-text('Google'), text='Workspaces', [data-row-index], .clay-table") to be visible
+    - waiting for" https://api.clay.com/v3/logout?expired=true&redirect_to=workspaces" navigation to finish...
+    - navigated to "https://app.clay.com/?expired=true&redirect_to=workspaces"
+    - waiting for" https://accounts.youtube.com/accounts/SetSID?ssdc=1&sidt=ALWU2cv78UKBBkqOQGr1i6StNGBBGo93uPq5CuURvBpj8yocRMeXIr6B7biQhV8O6OYSHxaorkU4Jrl2hbQ33fVxF/D8S7DRxQs6Oi%2B6vSfP8pAxBIXd%2BsdrcOESmiAcKxqUtG%2B4…" navigation to finish...
+
+2026-03-11 14:04:18,021 - ClaySession - INFO - Current Clay URL: https://accounts.google.com/v3/signin/challenge/pwd?TL=AHU8sQvEkEyXW6t2lECDuH37j0bYY-nIRfmQoFLT7jQFQtvTt9o5vPhaI-zIQF-2&app_domain=https%3A%2F%2Fapi.clay.com&checkConnection=youtube%3A1046&checkedDomains=youtube&cid=3&client_id=981145587936-ua1gf0vah92380gmthsotch0po8k1igb.apps.googleusercontent.com&continue=https%3A%2F%2Faccounts.google.com%2Fsignin%2Foauth%2Fconsent%3Fauthuser%3Dunknown%26part%3DAJi8hAPAS0mzoKsPUKoKPrns4b1_IEe5Y6K0FJxkMV3MY82PPe3wRA_sAMssYylHisziaN79DnePKZmAWBZpKhsIcgpI9R-krxy6VaP2A15p3OyGnX705pFn4x15ELU4I4gz-SqdD5eOXKhFR_HaUhTIaENWLjsSFQgt7U8fYssBVNyrG-Ke64oy1_q7FKbaPVIvWJ6MNGO1XxN7fQBWZrZNuxVQx83OFCGdhGalrqqUnFsoCgl_l0Yne3c0hmcg2oGg10tv8W19iQz-dOEMxRjIKMJ3JozkLnHXSgCvPY4vmtZugM_7xQr70XMISgkFCdOihpIdeJsNJvcAS2PMhiLHMEmwBz-I3is86vJffHNGENOn7-920EXje3u8jPhlTfrEkUprpS9tvBikzzaiBxtePU7x4bzDE-I1UyDwg9BYpBgE5vsgeLf-k2AO7Vt0sf5QLdT2IbzLojD497w6fOkbyVqgH57AOQ%26flowName%3DGeneralOAuthFlow%26as%3DS-1791326121%253A1773218036924799%26client_id%3D981145587936-ua1gf0vah92380gmthsotch0po8k1igb.apps.googleusercontent.com%26requestPath%3D%252Fsignin%252Foauth%252Fconsent%23&dsh=S-1791326121%3A1773218036924799&flowName=GeneralOAuthFlow&o2v=2&opparams=%253F&pstMsg=1&rart=ANgoxcfnln-5GFsp7E0RNIw9psGKIL9X_YZSNdjLylNBCgukp9ZTR9ECQluqxGI6pPHLMy2iibgn9-x74eWW5-a7L9c2kCB5QuYG1rOWMvwm_rFm5FKDVN4&redirect_uri=https%3A%2F%2Fapi.clay.com%2Fv3%2Fauth%2Fcallback%2Fgoogle&response_type=code&scope=profile%20email%20openid&service=lso
+2026-03-11 14:04:18,021 - ClaySession - INFO - 🔑 LOGIN DETECTED: Opening manual entry mode...
+2026-03-11 14:04:18,218 - ClaySession - INFO - ⏳ Please login manually in the browser window (Google SSO).
+2026-03-11 14:04:22,202 - ClaySession - INFO - ✅ Session found! Letting it settle...
+2026-03-11 14:04:32,211 - ClaySession - INFO - ✅ Clay Session Verified & Ready.
+2026-03-11 14:04:32,224 - ClayHarvester - INFO - 📡 Navigating to Clay Workbook: https://app.clay.com/workspaces/1039340/w/enrich-people?conversationId=cc_0tbopzgMvECDqJcb5PQ&tableId=t_0tboq5wAXFzdboBSK9z&viewId=gv_0tboq5x2pp8ux4kqBfN&workbookId=wb_0tboq5vkunNcbqFk67B
+2026-03-11 14:04:32,277 - ClayCLI - ERROR - ❌ Critical Failure during harvest: Page.goto: Target page, context or browser has been closed
+2026-03-11 14:04:35,993 - ClayCLI - INFO - 🚀 Initializing Clay Harvest for usman@thescooter.ai
+2026-03-11 14:04:36,582 - ClaySession - INFO - 🚀 Attempting to launch Clay Browser (Handle: usman@thescooter.ai)...
+2026-03-11 14:04:38,393 - ClaySession - INFO - ✅ Success! Connected to Chrome 🌐
+2026-03-11 14:04:38,402 - ClaySession - INFO - Checking Clay session state...
+2026-03-11 14:04:40,936 - ClaySession - INFO - 🔭 Waiting for session or login screen...
+2026-03-11 14:05:11,001 - ClaySession - WARNING - ⚠️ Page load check timeout: Page.wait_for_selector: Timeout 30000ms exceeded.
+Call log:
+  - waiting for locator("text='Welcome back', text='Sign in', text='session has expired', button:has-text('Google'), text='Workspaces', [data-row-index], .clay-table") to be visible
+    - waiting for" https://app.clay.com/?expired=true&redirect_to=workspaces" navigation to finish...
+    - navigated to "https://app.clay.com/?expired=true&redirect_to=workspaces"
+    - waiting for" https://accounts.google.com/o/oauth2/v2/auth?scope=profile%20email%20openid&response_type=code&client_id=981145587936-ua1gf0vah92380gmthsotch0po8k1igb.apps.googleusercontent.com&redirect_uri=https%3A…" navigation to finish...
+    - navigated to "https://app.clay.com/workspaces"
+
+2026-03-11 14:05:11,004 - ClaySession - INFO - Current Clay URL: https://app.clay.com/workspaces/1039340/home
+2026-03-11 14:05:11,102 - ClaySession - INFO - ✅ No login required. Proceeding...
+2026-03-11 14:05:11,102 - ClaySession - INFO - ✅ Clay Session Verified & Ready.
+2026-03-11 14:05:11,104 - ClayHarvester - INFO - 📡 Navigating to Clay Workbook: https://app.clay.com/workspaces/1039340/w/enrich-people?conversationId=cc_0tbopzgMvECDqJcb5PQ&tableId=t_0tboq5wAXFzdboBSK9z&viewId=gv_0tboq5x2pp8ux4kqBfN&workbookId=wb_0tboq5vkunNcbqFk67B
+2026-03-11 14:05:28,297 - ClayHarvester - INFO - 🔭 Scanning the Clay table...
+2026-03-11 14:05:28,733 - ClayHarvester - ERROR - ❌ Could not find any rows in the Clay table.
+2026-03-11 14:05:28,744 - ClayCLI - WARNING - ⚠️ Task finished but no leads were captured. Check logs/screenshots.
+2026-03-11 14:34:57,116 - ClayCLI - INFO - 🚀 Initializing Clay Harvest for usman@thescooter.ai
+2026-03-11 14:34:57,752 - ClaySession - INFO - 🚀 Attempting to launch Clay Browser (Handle: usman@thescooter.ai)...
+2026-03-11 14:35:03,315 - ClaySession - INFO - ✅ Success! Connected to Chrome 🌐
+2026-03-11 14:35:03,330 - ClaySession - INFO - Checking Clay session state...
+2026-03-11 14:35:06,142 - ClaySession - INFO - 🔭 Waiting for session or login screen...
+2026-03-11 14:35:36,180 - ClaySession - WARNING - ⚠️ Page load check timeout: Page.wait_for_selector: Timeout 30000ms exceeded.
+Call log:
+  - waiting for locator("text='Welcome back', text='Sign in', text='session has expired', button:has-text('Google'), text='Workspaces', [data-row-index], .clay-table") to be visible
+
+2026-03-11 14:35:36,181 - ClaySession - INFO - Current Clay URL: https://app.clay.com/workspaces/1039340/home
+2026-03-11 14:35:36,231 - ClaySession - INFO - ✅ No login required. Proceeding...
+2026-03-11 14:35:36,234 - ClaySession - INFO - ✅ Clay Session Verified & Ready.
+2026-03-11 14:35:36,255 - ClayHarvester - INFO - 📡 Navigating to Clay Workbook: https://app.clay.com/workspaces/1039340/w/enrich-people?conversationId=cc_0tbopzgMvECDqJcb5PQ&tableId=t_0tboq5wAXFzdboBSK9z&viewId=gv_0tboq5x2pp8ux4kqBfN&workbookId=wb_0tboq5vkunNcbqFk67B
+2026-03-11 14:35:53,189 - ClayHarvester - INFO - 🔭 Scanning the Clay table...
+2026-03-11 14:35:53,907 - ClayHarvester - WARNING - ⚠️ Selector tr found rows but they have no cells. Skipping...
+2026-03-11 14:35:53,921 - ClayHarvester - ERROR - ❌ Could not find any rows in the Clay table.
+2026-03-11 14:35:53,932 - ClayCLI - WARNING - ⚠️ Task finished but no leads were captured. Check logs/screenshots.
+2026-03-11 14:41:02,000 - ClayCLI - INFO - 🚀 Initializing Clay Harvest for vishnu02.tech@gmail.com
+2026-03-11 14:41:02,732 - ClaySession - INFO - 🚀 Attempting to launch Clay Browser (Handle: vishnu02.tech@gmail.com)...
+2026-03-11 14:41:08,849 - ClaySession - INFO - ✅ Success! Connected to Chrome 🌐
+2026-03-11 14:41:08,965 - ClaySession - INFO - Checking Clay session state...
+2026-03-11 14:41:13,165 - ClaySession - INFO - 🔭 Waiting for session or login screen...
+2026-03-11 14:41:23,638 - ClayCLI - INFO - 🚀 Initializing Clay Harvest for usman@thescooter.ai
+2026-03-11 14:41:24,174 - ClaySession - INFO - 🚀 Attempting to launch Clay Browser (Handle: usman@thescooter.ai)...
+2026-03-11 14:41:27,968 - ClaySession - INFO - ✅ Success! Connected to Chrome 🌐
+2026-03-11 14:41:27,992 - ClaySession - INFO - Checking Clay session state...
+2026-03-11 14:41:30,830 - ClaySession - INFO - 🔭 Waiting for session or login screen...
+2026-03-11 14:42:00,932 - ClaySession - WARNING - ⚠️ Page load check timeout: Page.wait_for_selector: Timeout 30000ms exceeded.
+Call log:
+  - waiting for locator("text='Welcome back', text='Sign in', text='session has expired', button:has-text('Google'), text='Workspaces', [data-row-index], .clay-table") to be visible
+
+2026-03-11 14:42:00,935 - ClaySession - INFO - Current Clay URL: https://app.clay.com/workspaces/1039340/home
+2026-03-11 14:42:00,988 - ClaySession - INFO - ✅ No login required. Proceeding...
+2026-03-11 14:42:00,990 - ClaySession - INFO - ✅ Clay Session Verified & Ready.
+2026-03-11 14:42:00,991 - ClayHarvester - INFO - 📡 Navigating to Clay Workbook: https://app.clay.com/workspaces/1039340/w/enrich-people?conversationId=cc_0tbopzgMvECDqJcb5PQ&tableId=t_0tboq5wAXFzdboBSK9z&viewId=gv_0tboq5x2pp8ux4kqBfN&workbookId=wb_0tboq5vkunNcbqFk67B
+2026-03-11 14:42:04,068 - ClayHarvester - INFO - ✅ Table content detected.
+2026-03-11 14:42:09,074 - ClayHarvester - INFO - 🔭 Scanning the Clay table...
+2026-03-11 14:42:10,403 - ClayHarvester - INFO - ✅ Found 6 potential rows using selector: tr
+2026-03-11 14:42:12,053 - ClayHarvester - INFO -   [+] Captured: Pune, Maharashtra, India | https://www.linkedin.com/in/shyam-sahu-dev/
+2026-03-11 14:42:13,370 - ClayHarvester - INFO -   [+] Captured: Pune/Pimpri-Chinchwad Area | https://www.linkedin.com/in/poonam-paul-b8aaa1268/
+2026-03-11 14:42:14,269 - ClayHarvester - INFO -   [+] Captured: Pune, Maharashtra, India | https://www.linkedin.com/in/deven-gawande-a81788247/
+2026-03-11 14:42:15,542 - ClayHarvester - INFO -   [+] Captured: Pune, Maharashtra, India | https://www.linkedin.com/in/beibiely-hlovy-711b73321/
+2026-03-11 14:42:16,308 - ClayHarvester - INFO -   [+] Captured: Pune Division, Maharashtra, India | https://www.linkedin.com/in/mahadev-waghmode-748592394/
+2026-03-11 14:42:16,823 - ClayHarvester - INFO - ✅ Successfully added 5 NEW leads to persistent queue.
+2026-03-11 14:42:16,823 - ClayCLI - INFO - ✨ Clay Harvest Task Completed Successfully. Captured 5 leads.

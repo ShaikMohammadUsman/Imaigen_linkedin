@@ -74,6 +74,9 @@
     "2026-03-05": {
       "people_searches": 1,
       "harvest_pages": 1
+    },
+    "2026-03-11": {
+      "sessions_started": 3
     }
   },
   "usman@thescooter.ai": {
@@ -125,24 +128,62 @@
     "2026-03-05": {
       "people_searches": 1,
       "harvest_pages": 4,
-      "harvested_cards": 28
+      "harvested_cards": 28,
+      "enrich_profiles": 1
     },
     "weekly": {
       "2026-W10": {
-        "people_searches": 1,
-        "harvest_pages": 4,
-        "harvested_cards": 28
+        "people_searches": 2,
+        "harvest_pages": 5,
+        "harvested_cards": 28,
+        "enrich_profiles": 1
       }
     },
     "monthly": {
       "2026-03": {
-        "people_searches": 1,
-        "harvest_pages": 4,
-        "harvested_cards": 28
+        "people_searches": 2,
+        "harvest_pages": 5,
+        "harvested_cards": 28,
+        "enrich_profiles": 1
       }
     },
     "search_history": {
-      "e08dd6c5f4839f5baeb76bf4693aac53": 4
+      "e08dd6c5f4839f5baeb76bf4693aac53": 4,
+      "a160f947b259d5ab11e2f341e8d47c92": 1
+    },
+    "2026-03-06": {
+      "people_searches": 1,
+      "harvest_pages": 1
+    }
+  },
+  "md.usman540@gmail.com": {
+    "2026-03-11": {
+      "sessions_started": 5,
+      "enrich_profiles": 3
+    },
+    "health": {
+      "2026-03-11": {
+        "success": 4,
+        "captcha": 0,
+        "restricted": 0,
+        "timeout": 0,
+        "network_error": 0,
+        "unknown_failure": 0,
+        "last_failure_note": ""
+      }
+    },
+    "metadata": {
+      "first_seen": "2026-03-11"
+    },
+    "weekly": {
+      "2026-W11": {
+        "enrich_profiles": 3
+      }
+    },
+    "monthly": {
+      "2026-03": {
+        "enrich_profiles": 3
+      }
     }
   }
 }

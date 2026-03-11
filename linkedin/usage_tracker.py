@@ -15,6 +15,9 @@ SAFETY_CONFIG = {
         "hard_cap": 5,
         "heavy_days_per_week": 2
     },
+    "health": {
+        "event_types": ["success", "captcha", "restricted", "timeout", "network_error", "unknown_failure"]
+    },
     "harvested_cards": {
         "monthly_target_range": (4000, 6000),
         "weekly_target_range": (1000, 1500),
@@ -124,6 +127,80 @@ class UsageTracker:
         
         self._save_stats(stats)
         return stats[handle][today][metric]
+
+    def record_session(self, handle: str):
+        stats = self._load_stats()
+        today = self._get_today_str()
+        
+        if handle not in stats: stats[handle] = {}
+        if today not in stats[handle]: stats[handle][today] = {}
+        
+        stats[handle][today]["sessions_started"] = stats[handle][today].get("sessions_started", 0) + 1
+        self._save_stats(stats)
+        logger.info(colored(f"🏁 Session started for {handle}. Total for today: {stats[handle][today]['sessions_started']}", "blue"))
+
+    def record_health_event(self, handle: str, event_type: str, details: str = None):
+        """
+        Classifies and records tool/automation failures or successes.
+        event_type in: success, captcha, restricted, timeout, network_error, unknown_failure
+        """
+        stats = self._load_stats()
+        today = self._get_today_str()
+        
+        if handle not in stats: stats[handle] = {}
+        if "health" not in stats[handle]: stats[handle]["health"] = {}
+        if today not in stats[handle]["health"]: 
+            stats[handle]["health"][today] = {et: 0 for et in SAFETY_CONFIG["health"]["event_types"]}
+        
+        if event_type in stats[handle]["health"][today]:
+            stats[handle]["health"][today][event_type] += 1
+            
+            # Record last failure reason if provided
+            if event_type != "success" and details:
+                stats[handle]["health"][today]["last_failure_note"] = details[:200]
+                
+            self._save_stats(stats)
+            
+            # Log it
+            if event_type == "success":
+                logger.debug(f"🏥 Health: Recorded success for {handle}")
+            else:
+                color = "red" if event_type in ["captcha", "restricted"] else "yellow"
+                logger.warning(colored(f"🏥 Health Alert: Recorded {event_type} for {handle} ({details or 'No details'})", color))
+        else:
+            logger.error(f"Invalid health event type: {event_type}")
+
+    def reset_health(self, handle: str):
+        """Reset today's health metrics to healthy state."""
+        stats = self._load_stats()
+        today = self._get_today_str()
+        
+        if handle in stats and "health" in stats[handle] and today in stats[handle]["health"]:
+            stats[handle]["health"][today] = {et: 0 for et in SAFETY_CONFIG["health"]["event_types"]}
+            stats[handle]["health"][today]["last_failure_note"] = ""
+            stats[handle]["health"][today]["success"] = 1 # Start with 1 success to flip indicator
+            self._save_stats(stats)
+            logger.info(colored(f"🏥 Health Reset for {handle}. Status now HEALTHY.", "green"))
+            return True
+        return False
+
+    def get_health_stats(self, handle: str, timeframe="daily"):
+        stats = self._load_stats()
+        user_health = stats.get(handle, {}).get("health", {})
+        
+        if timeframe == "daily":
+            today = self._get_today_str()
+            return user_health.get(today, {})
+        
+        # Monthly summary
+        month_prefix = self._get_month_str()
+        monthly_summary = {et: 0 for et in SAFETY_CONFIG["health"]["event_types"]}
+        for date, day_stats in user_health.items():
+            if date.startswith(month_prefix):
+                for et in monthly_summary:
+                    monthly_summary[et] += day_stats.get(et, 0)
+        
+        return monthly_summary
 
     def get_last_page(self, handle: str, search_url: str) -> int:
         import hashlib

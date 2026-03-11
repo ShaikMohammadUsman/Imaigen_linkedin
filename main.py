@@ -18,12 +18,17 @@ if __name__ == "__main__":
     parser.add_argument("--limit", type=int, default=20)
     parser.add_argument("--urls", nargs="*", help="Specific URLs to process")
     parser.add_argument("--note", help="Custom connection request note")
+    parser.add_argument("--checkpoint", action="store_true", help="Run manual authentication checkpoint")
     args = parser.parse_args()
     
-    launch_connect_follow_up_campaign(
-        args.handle, 
-        enrich_only=args.enrich_only, 
-        limit=args.limit, 
-        urls=args.urls,
-        note=args.note
-    )
+    if args.checkpoint:
+        from linkedin.csv_launcher import checkpoint
+        checkpoint(args.handle)
+    else:
+        launch_connect_follow_up_campaign(
+            args.handle, 
+            enrich_only=args.enrich_only, 
+            limit=args.limit, 
+            urls=args.urls,
+            note=args.note
+        )

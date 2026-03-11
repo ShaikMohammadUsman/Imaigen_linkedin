@@ -4,8 +4,10 @@ from urllib.parse import unquote, urlparse, urljoin
 
 from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 
-from linkedin.conf import FIXTURE_PAGES_DIR, OPPORTUNISTIC_SCRAPING
+from linkedin.conf import FIXTURE_PAGES_DIR, OPPORTUNISTIC_SCRAPING, ASSETS_DIR
 from linkedin.navigation.exceptions import SkipProfile
+from linkedin.notifications import send_alert
+from linkedin.usage_tracker import UsageTracker
 
 logger = logging.getLogger(__name__)
 
@@ -35,8 +37,20 @@ def goto_page(session: "AccountSession",
     # DETECTOR: Check for security challenges
     if any(q in current for q in ["/checkpoint/", "/challenge/", "/check/verify"]):
         from linkedin.navigation.exceptions import DetectionError
+        tracker = UsageTracker(ASSETS_DIR)
+        
+        event_type = "captcha" if "captcha" in current else "restricted"
+        tracker.record_health_event(session.handle, event_type, details=f"Challenge at: {current}")
+        send_alert(f"LinkedIn Security Challenge encountered: {event_type.title()} at {current}", category="security")
+        
         logger.error(f"🚨 LinkedIn Detection Triggered! Page: {current}")
         raise DetectionError(f"LinkedIn Security Challenge encountered at {current}")
+
+    # AUTHENTICATION CHECK: Check for login redirects
+    if any(q in current for q in ["/login", "/password-reset"]):
+        from linkedin.navigation.exceptions import AuthenticationError
+        logger.warning(f"🚫 Session expired or blocked. Redirected to: {current}")
+        raise AuthenticationError(f"Session invalidated. Redirected to: {current}")
 
     if expected_url_pattern not in current:
         raise RuntimeError(f"{error_message} → expected '{expected_url_pattern}' | got '{current}'")

@@ -99,6 +99,19 @@ async def sse_logs(request: Request):
 
     return EventSourceResponse(event_generator())
 
+@app.get("/api/accounts")
+def get_accounts():
+    from linkedin.conf import list_active_accounts
+    return list_active_accounts()
+
+@app.post("/api/reset_health")
+def reset_health(handle: str):
+    from linkedin.usage_tracker import UsageTracker
+    from linkedin.conf import ASSETS_DIR
+    tracker = UsageTracker(ASSETS_DIR)
+    success = tracker.reset_health(handle)
+    return {"status": "success" if success else "failed"}
+
 @app.post("/api/harvest")
 async def start_harvest(request: Request):
     global current_process
@@ -296,6 +309,34 @@ async def start_campaign(req: Request):
     
     return {"status": "started", "pid": current_process.pid}
 
+@app.post("/api/checkpoint")
+async def start_checkpoint(req: Request):
+    data = await req.json()
+    handle = data.get("handle")
+    if not handle:
+        return JSONResponse({"status": "error", "message": "No handle provided"}, status_code=400)
+        
+    global current_process
+    if current_process and current_process.returncode is None:
+        return JSONResponse({"status": "error", "message": "Another process is already running."}, status_code=400)
+        
+    cmd = [sys.executable, "-u", "-m", "linkedin.navigation.login", handle, "--checkpoint"]
+    
+    current_process = await asyncio.create_subprocess_exec(
+        *cmd,
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE,
+        cwd=str(BASE_DIR)
+    )
+    
+    msg = f"🛡️ Manual Checkpoint Started for @{handle}"
+    await push_log(msg)
+    
+    asyncio.create_task(read_stream(current_process.stdout))
+    asyncio.create_task(read_stream(current_process.stderr))
+    
+    return {"status": "started", "pid": current_process.pid}
+
 @app.get("/api/process_status")
 def get_process_status():
     global current_process
@@ -358,232 +399,273 @@ async def stop_process():
 
 @app.get("/api/results")
 def get_results(handle: str = None, refresh: bool = False):
-    import csv
-    from linkedin.db.engine import Database
-    from linkedin.db.models import Profile
-    from linkedin.db.profiles import url_to_public_id
+    try:
+        import csv
+        import traceback
+        from linkedin.db.engine import Database
+        from linkedin.db.models import Profile
+        from linkedin.db.profiles import url_to_public_id
 
-    # 1. Load Master Queue (CSV) - These are our "Constant" results
-    queue_records = []
-    if HARVEST_FILE.exists():
-        try:
-            with open(HARVEST_FILE, "r", encoding="utf-8") as f:
-                queue_records = list(csv.DictReader(f))
-        except Exception as e:
-            print(f"Error reading harvest file: {e}")
-
-    # 2. Get Enrichment Data from DB for the current handle
-    db_profiles_map = {}
-    if handle and handle != "undefined":
-        try:
-            db_wrapper = Database.from_handle(handle)
-            session = db_wrapper.get_session()
+        # 1. Load Master Queue (CSV) - These are our "Constant" results
+        queue_records = []
+        if HARVEST_FILE.exists():
             try:
-                # Fetch all profiles that have some scraped data
-                profiles = session.query(Profile).filter(Profile.profile.isnot(None)).all()
-                for p in profiles:
-                    db_profiles_map[p.public_identifier] = p
-            finally:
-                session.close()
-                db_wrapper.Session.remove()
-        except Exception as e:
-            print(f"Results DB Error for {handle}: {e}")
+                with open(HARVEST_FILE, "r", encoding="utf-8") as f:
+                    queue_records = list(csv.DictReader(f))
+            except Exception as e:
+                print(f"Error reading harvest file: {e}")
 
-    final_results = []
-    processed_pids = set()
-
-    # 3. Merge CSV (Primary) with DB (Enrichment)
-    from linkedin.api.voyager import parse_linkedin_voyager_response
-    for row in queue_records:
-        url = row.get("url", "")
-        if not url: continue
-        
-        pid = None
-        try: pid = url_to_public_id(url)
-        except: pass
-        
-        # Detect Source
-        source = "LinkedIn"
-        role_lower = (row.get("role_name") or "").lower()
-        if "clay" in role_lower: source = "Clay"
-        elif "apollo" in role_lower: source = "Apollo"
-
-        # Default data from CSV (The "Constant" part)
-        record = {
-            "Full Name": row.get("candidate_name") or "Harvested Profile",
-            "Role": row.get("role_name") or "Generic",
-            "Headline": "Pending enrichment...",
-            "Current Company": row.get("company_name") or "-",
-            "Location": row.get("location") or "-",
-            "Email": "",
-            "About": "",
-            "Status": "HARVESTED",
-            "URL": url,
-            "LinkedIn URL": url, # Explicit field for sorting/display
-            "Source": source,
-            "Picture": row.get("candidate_pic") or ""
-        }
-
-        # Override with DB data if enriched
-        if pid and pid in db_profiles_map:
-            p = db_profiles_map[pid]
-            data = p.profile
-            raw_data = p.data
-            
-            # Fallback for older stringified data
-            if isinstance(data, str):
-                import json
-                try: data = json.loads(data)
-                except: data = {}
-            if isinstance(raw_data, str):
-                import json
-                try: raw_data = json.loads(raw_data)
-                except: raw_data = {}
-            
-            # HEAL old records by re-parsing raw Voyager data
-            if raw_data and (not data or "positions" not in data or "skills" not in data):
+        # 2. Get Enrichment Data from DB for the current handle
+        db_profiles_map = {}
+        if handle and handle != "undefined":
+            try:
+                db_wrapper = Database.from_handle(handle)
+                session = db_wrapper.get_session()
                 try:
-                    healed_data = parse_linkedin_voyager_response(raw_data, public_identifier=pid)
-                    if healed_data:
-                        data = healed_data
-                except Exception as e:
-                    print(f"Heal failed for {pid}: {e}")
-            
-            exp = data.get("positions", [])
-            exp_list = []
-            company = record["Current Company"]
-            for i, job in enumerate(exp):
-                title = job.get('title', 'Position')
-                comp = job.get('company_name', '') or job.get('company', '')
-                if i == 0 and comp: company = comp
-                
-                # Format Dates
-                dr = job.get('date_range') or {}
-                start = dr.get('start') or {}
-                end = dr.get('end') or {}
-                start_str = f"{start.get('month', '') or ''}/{start.get('year', '') or ''}".strip("/")
-                end_str = f"{end.get('month', '') or ''}/{end.get('year', '') or ''}".strip("/") or "Present"
-                dates = f"{start_str} - {end_str}" if start_str else ""
-                
-                details = job.get('company_details') or {}
-                exp_list.append({
-                    "title": title,
-                    "company": comp,
-                    "dates": dates,
-                    "company_description": details.get('description') or '',
-                    "company_website": details.get('url') or '',
-                    "company_industry": details.get('industry') or '',
-                    "company_size": details.get('employee_count') or '',
-                    "company_headquarters": details.get('headquarters') or '',
-                    "company_specialties": details.get('specialties') or []
-                })
-            
-            skills = data.get("skills", [])
-            if isinstance(skills, list):
-                skills_str = ", ".join([str(s) for s in skills[:12]])
-            else:
-                skills_str = ""
-            
-            record.update({
-                "Full Name": data.get("full_name") or data.get("name") or record["Full Name"],
-                "Headline": data.get("headline") or data.get("occupation") or record["Headline"],
-                "Current Company": company,
-                "Experience": exp_list,
-                "Skills": skills_str,
-                "Location": data.get("location_name") or data.get("city") or record["Location"],
-                "Email": data.get("email") or "",
-                "Phone": data.get("phone") or "",
-                "About": data.get("summary") or data.get("about") or "",
-                "Status": p.state.upper(),
-                "Picture": data.get("profile_picture") or "",
-                "Last Message": p.last_message,
-                "Last Message At": p.last_message_at.isoformat() if p.last_message_at else None,
-                "Last Received Message": p.last_received_message,
-                "Last Received At": p.last_received_at.isoformat() if p.last_received_at else None
-            })
-            processed_pids.add(pid)
+                    # Fetch all profiles that have some scraped data
+                    profiles = session.query(Profile).filter(Profile.profile.isnot(None)).all()
+                    for p in profiles:
+                        db_profiles_map[p.public_identifier] = p
+                finally:
+                    session.close()
+                    db_wrapper.Session.remove()
+            except Exception as e:
+                print(f"Results DB Error for {handle}: {e}")
+                # traceback.print_exc()
 
-        final_results.append(record)
+        final_results = []
+        processed_pids = set()
 
-    # 4. Add profiles from DB that are NOT in current CSV (Just in case)
-    for pid, p in db_profiles_map.items():
-        if pid not in processed_pids:
-            data = p.profile
-            raw_data = p.data
+        # 3. Merge CSV (Primary) with DB (Enrichment)
+        from linkedin.api.voyager import parse_linkedin_voyager_response
+        for row in queue_records:
+            url = row.get("url", "")
+            if not url: continue
             
-            if isinstance(data, str):
-                import json
-                try: data = json.loads(data)
-                except: data = {}
-            if isinstance(raw_data, str):
-                import json
-                try: raw_data = json.loads(raw_data)
-                except: raw_data = {}
-
-            if raw_data and (not data or "positions" not in data or "skills" not in data):
-                try:
-                    healed = parse_linkedin_voyager_response(raw_data, public_identifier=pid)
-                    if healed: data = healed
-                except: pass
-                
-            exp = data.get("positions", [])
-            exp_list = []
-            company = ""
-            for i, job in enumerate(exp):
-                title = job.get('title', 'Position')
-                comp = job.get('company_name', '') or job.get('company', '')
-                if i == 0: company = comp
-                dr = job.get('date_range') or {}
-                start_str = f"{dr.get('start', {}).get('month', '')}/{dr.get('start', {}).get('year', '')}".strip("/")
-                end_str = f"{dr.get('end', {}).get('month', '')}/{dr.get('end', {}).get('year', '')}".strip("/") or "Present"
-                details = job.get('company_details') or {}
-                exp_list.append({
-                    "title": title, 
-                    "company": comp, 
-                    "dates": f"{start_str} - {end_str}" if start_str else "",
-                    "company_description": details.get('description') or '',
-                    "company_website": details.get('url') or '',
-                    "company_industry": details.get('industry') or '',
-                    "company_size": details.get('employee_count') or '',
-                    "company_headquarters": details.get('headquarters') or '',
-                })
+            pid = None
+            try: pid = url_to_public_id(url)
+            except: pass
             
-            skills = data.get("skills", [])
-            skills_str = ", ".join([str(s) for s in skills[:12]]) if isinstance(skills, list) else ""
-                
-            # Detect Source for legacy
+            # Detect Source
             source = "LinkedIn"
-            role_lower = (data.get("role_name") or "").lower()
+            role_lower = (row.get("role_name") or "").lower()
             if "clay" in role_lower: source = "Clay"
             elif "apollo" in role_lower: source = "Apollo"
 
-            final_results.append({
-                "Full Name": data.get("full_name") or data.get("name") or "Legacy Candidate",
-                "Role": data.get("role_name") or "Old Campaign",
-                "Headline": data.get("headline") or "-",
-                "Current Company": company,
-                "Experience": exp_list,
-                "Skills": skills_str,
-                "Location": data.get("location_name") or data.get("city") or "-",
-                "Email": data.get("email") or "",
-                "Phone": data.get("phone") or "",
-                "About": data.get("summary") or data.get("about") or "",
-                "Status": p.state.upper(),
-                "URL": f"https://www.linkedin.com/in/{pid}",
-                "LinkedIn URL": f"https://www.linkedin.com/in/{pid}",
-                "Source": source
-            })
+            # Default data from CSV (The "Constant" part)
+            record = {
+                "Full Name": row.get("candidate_name") or "Harvested Profile",
+                "Role": row.get("role_name") or "Generic",
+                "Headline": "Pending enrichment...",
+                "Current Company": row.get("company_name") or "-",
+                "Location": row.get("location") or "-",
+                "Email": "",
+                "About": "",
+                "Status": "HARVESTED",
+                "URL": url,
+                "LinkedIn URL": url, # Explicit field for sorting/display
+                "Source": source,
+                "Picture": row.get("candidate_pic") or ""
+            }
 
-    # 5. Newest first
-    final_results.reverse()
-    
-    return {
-        "data": final_results,
-        "stats": {
-            "total": len(final_results),
-            "breakdown": {"total": len(final_results)}
+            # Override with DB data if enriched
+            if pid and pid in db_profiles_map:
+                p = db_profiles_map[pid]
+                data = p.profile
+                raw_data = p.data
+                
+                # Fallback for older stringified data
+                if isinstance(data, str):
+                    import json
+                    try: data = json.loads(data)
+                    except: data = {}
+                if isinstance(raw_data, str):
+                    import json
+                    try: raw_data = json.loads(raw_data)
+                    except: raw_data = {}
+                
+                # HEAL old records by re-parsing raw Voyager data
+                if raw_data and (not data or "positions" not in data or "skills" not in data):
+                    try:
+                        healed_data = parse_linkedin_voyager_response(raw_data, public_identifier=pid)
+                        if healed_data:
+                            data = healed_data
+                    except Exception as e:
+                        print(f"Heal failed for {pid}: {e}")
+                
+                if not data: data = {}
+                exp = data.get("positions", [])
+                exp_list = []
+                company = record["Current Company"]
+                for i, job in enumerate(exp):
+                    if not job: continue
+                    title = job.get('title', 'Position')
+                    comp = job.get('company_name', '') or job.get('company', '')
+                    if i == 0 and comp: company = comp
+                    
+                    # Format Dates
+                    dr = job.get('date_range') or {}
+                    if not dr: dr = {}
+                    start = dr.get('start') or {}
+                    end = dr.get('end') or {}
+                    
+                    start_val = (start or {})
+                    end_val = (end or {})
+                    
+                    start_str = f"{start_val.get('month', '') or ''}/{start_val.get('year', '') or ''}".strip("/")
+                    end_str = f"{end_val.get('month', '') or ''}/{end_val.get('year', '') or ''}".strip("/") or "Present"
+                    dates = f"{start_str} - {end_str}" if start_str else ""
+                    
+                    details = job.get('company_details') or {}
+                    exp_list.append({
+                        "title": title,
+                        "company": comp,
+                        "dates": dates,
+                        "company_description": details.get('description') or '',
+                        "company_website": details.get('url') or '',
+                        "company_industry": details.get('industry') or '',
+                        "company_size": details.get('employee_count') or '',
+                        "company_headquarters": details.get('headquarters') or '',
+                        "company_specialties": details.get('specialties') or []
+                    })
+                
+                skills = data.get("skills", [])
+                if isinstance(skills, list):
+                    skills_str = ", ".join([str(s) for s in skills[:12] if s])
+                else:
+                    skills_str = ""
+                
+                record.update({
+                    "Full Name": data.get("full_name") or data.get("name") or record["Full Name"],
+                    "Headline": data.get("headline") or data.get("occupation") or record["Headline"],
+                    "Current Company": company,
+                    "Experience": exp_list,
+                    "Skills": skills_str,
+                    "Location": data.get("location_name") or data.get("city") or record["Location"],
+                    "State": data.get("state") or "",
+                    "Country": data.get("country") or "",
+                    "Certifications": data.get("certifications", []),
+                    "Projects": data.get("projects", []),
+                    "Education": data.get("educations", []),
+                    "Email": data.get("email") or "",
+                    "Phone": data.get("phone") or "",
+                    "About": data.get("summary") or data.get("about") or "",
+                    "Status": p.state.upper(),
+                    "Picture": data.get("profile_picture") or "",
+                    "Last Message": p.last_message,
+                    "Last Message At": p.last_message_at.isoformat() if p.last_message_at else None,
+                    "Last Received Message": p.last_received_message,
+                    "Last Received At": p.last_received_at.isoformat() if p.last_received_at else None
+                })
+                processed_pids.add(pid)
+
+            final_results.append(record)
+
+        # 4. Add profiles from DB that are NOT in current CSV (Just in case)
+        for pid, p in db_profiles_map.items():
+            if pid not in processed_pids:
+                data = p.profile
+                raw_data = p.data
+                
+                if isinstance(data, str):
+                    import json
+                    try: data = json.loads(data)
+                    except: data = {}
+                if isinstance(raw_data, str):
+                    import json
+                    try: raw_data = json.loads(raw_data)
+                    except: raw_data = {}
+
+                if raw_data and (not data or "positions" not in data or "skills" not in data):
+                    try:
+                        healed = parse_linkedin_voyager_response(raw_data, public_identifier=pid)
+                        if healed: data = healed
+                    except: pass
+                    
+                if not data: data = {}
+                exp = data.get("positions", [])
+                exp_list = []
+                company = ""
+                for i, job in enumerate(exp):
+                    if not job: continue
+                    title = job.get('title', 'Position')
+                    comp = job.get('company_name', '') or job.get('company', '')
+                    if i == 0: company = comp
+                    dr = job.get('date_range') or {}
+                    if not dr: dr = {}
+                    
+                    start = dr.get('start') or {}
+                    end = dr.get('end') or {}
+                    
+                    start_val = (start or {})
+                    end_val = (end or {})
+                    
+                    start_str = f"{start_val.get('month', '') or ''}/{start_val.get('year', '') or ''}".strip("/")
+                    end_str = f"{end_val.get('month', '') or ''}/{end_val.get('year', '') or ''}".strip("/") or "Present"
+                    
+                    details = job.get('company_details') or {}
+                    exp_list.append({
+                        "title": title, 
+                        "company": comp, 
+                        "dates": f"{start_str} - {end_str}" if start_str else "",
+                        "company_description": details.get('description') or '',
+                        "company_website": details.get('url') or '',
+                        "company_industry": details.get('industry') or '',
+                        "company_size": details.get('employee_count') or '',
+                        "company_headquarters": details.get('headquarters') or '',
+                    })
+                
+                skills = data.get("skills", [])
+                skills_str = ", ".join([str(s) for s in skills[:12] if s]) if isinstance(skills, list) else ""
+                    
+                # Detect Source for legacy
+                source = "LinkedIn"
+                role_lower = (data.get("role_name") or "").lower()
+                if "clay" in role_lower: source = "Clay"
+                elif "apollo" in role_lower: source = "Apollo"
+
+                final_results.append({
+                    "Full Name": data.get("full_name") or data.get("name") or "Legacy Candidate",
+                    "Role": data.get("role_name") or "Old Campaign",
+                    "Headline": data.get("headline") or "-",
+                    "Current Company": company,
+                    "Experience": exp_list,
+                    "Skills": skills_str,
+                    "Location": data.get("location_name") or data.get("city") or "-",
+                    "State": data.get("state") or "",
+                    "Country": data.get("country") or "",
+                    "Certifications": data.get("certifications", []),
+                    "Projects": data.get("projects", []),
+                    "Education": data.get("educations", []),
+                    "Email": data.get("email") or "",
+                    "Phone": data.get("phone") or "",
+                    "About": data.get("summary") or data.get("about") or "",
+                    "Status": p.state.upper(),
+                    "URL": f"https://www.linkedin.com/in/{pid}",
+                    "LinkedIn URL": f"https://www.linkedin.com/in/{pid}",
+                    "Source": source,
+                    "Picture": data.get("profile_picture") or "",
+                    "Last Message": p.last_message,
+                    "Last Message At": p.last_message_at.isoformat() if p.last_message_at else None,
+                    "Last Received Message": p.last_received_message,
+                    "Last Received At": p.last_received_at.isoformat() if p.last_received_at else None
+                })
+
+        # 5. Newest first
+        final_results.reverse()
+        
+        return {
+            "data": final_results,
+            "stats": {
+                "total": len(final_results),
+                "breakdown": {"total": len(final_results)}
+            }
         }
-    }
+    except Exception as e:
+        print(f"CRITICAL ERROR in get_results: {e}")
+        import traceback
+        traceback.print_exc()
+        return JSONResponse(status_code=500, content={"message": str(e), "data": []})
 
 # --- ROLES API ---
 ROLES_FILE = ASSETS_DIR / "roles.json"

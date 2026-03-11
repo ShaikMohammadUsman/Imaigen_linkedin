@@ -144,3 +144,21 @@ def launch_connect_follow_up_campaign(
     logger.info(f"Loaded {len(profiles):,} profiles from CSV – ready for battle!")
 
     start_campaign(handle, session, profiles, enrich_only=enrich_only, limit=limit)
+
+
+def checkpoint(handle: str):
+    """
+    Open the browser and stay open for manual login/verification.
+    """
+    session = get_session(handle=handle)
+    session.ensure_browser()
+    logger.info(colored(f"🚀 Checkpoint active for @{handle}. Use VNC (localhost:5900) to login if needed.", "green", attrs=["bold"]))
+    
+    import time
+    try:
+        while True:
+            time.sleep(1)
+            # Check if browser is still open? 
+            # For simplicity, we just hang until the process is killed by the user
+    except KeyboardInterrupt:
+        logger.info("Checkpoint closed.")

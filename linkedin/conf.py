@@ -58,31 +58,35 @@ if not SECRETS_PATH.exists():
         "  and fill in your accounts (public settings + credentials)\n"
     )
 
-# Load everything from the single secrets file
-with open(SECRETS_PATH, "r", encoding="utf-8") as f:
-    _raw_config = yaml.safe_load(f) or {}
+def load_secrets():
+    """Reloads the secrets YAML file from disk."""
+    if not SECRETS_PATH.exists():
+        return {}
+    with open(SECRETS_PATH, "r", encoding="utf-8") as f:
+        raw = yaml.safe_load(f) or {}
+    return raw.get("accounts", {})
 
-_accounts_config = _raw_config.get("accounts", {})
-
-
-# ----------------------------------------------------------------------
-# Public API
-# ----------------------------------------------------------------------
 def get_account_config(handle: str) -> Dict[str, Any]:
-    if handle not in _accounts_config:
+    # Always get fresh config from disk for dynamic UI updates
+    accounts_config = load_secrets()
+    if handle not in accounts_config:
         raise KeyError(f"Account '{handle}' not found in {SECRETS_PATH}")
 
-    acct = _accounts_config[handle]
+    acct = accounts_config[handle]
 
     input_csv_rel = acct.get("input_csv")
     followup_rel  = acct.get("followup_template")
-    template_type = acct.get("followup_template_type")
+    followup_type = acct.get("followup_template_type")
+    
+    # NEW: Connection Request Note Templates
+    connect_rel   = acct.get("connection_template", "templates/prompts/connect.j2")
+    connect_type  = acct.get("connection_template_type", "ai_prompt")
 
     if input_csv_rel is None:
         raise ValueError(f"Missing 'input_csv' for account '{handle}'")
     if followup_rel is None:
         raise ValueError(f"Missing 'followup_template' for account '{handle}'")
-    if template_type is None:
+    if followup_type is None:
         raise ValueError(f"Missing 'followup_template_type' for account '{handle}'")
 
     account_db_path = DATA_DIR / f"{handle}.db"
@@ -100,13 +104,18 @@ def get_account_config(handle: str) -> Dict[str, Any]:
 
         "input_csv": ASSETS_DIR / input_csv_rel,
         "followup_template": ASSETS_DIR / followup_rel,
-        "followup_template_type": template_type,
+        "followup_template_type": followup_type,
+        
+        # NEW: Connection Request Note Templates
+        "connection_template": ASSETS_DIR / connect_rel,
+        "connection_template_type": connect_type,
     }
 
 def list_active_accounts() -> List[str]:
     """Return list of active account handles (order preserved from YAML)."""
+    accounts_config = load_secrets()
     return [
-        handle for handle, cfg in _accounts_config.items()
+        handle for handle, cfg in accounts_config.items()
         if cfg.get("active", True)
     ]
 

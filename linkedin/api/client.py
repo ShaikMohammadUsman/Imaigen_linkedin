@@ -7,6 +7,9 @@ from urllib.parse import urlparse
 from linkedin.api.voyager import parse_linkedin_voyager_response
 from linkedin.db.profiles import url_to_public_id
 from linkedin.navigation.exceptions import AuthenticationError
+from linkedin.usage_tracker import UsageTracker
+from linkedin.notifications import send_alert
+from linkedin.conf import ASSETS_DIR
 
 logger = logging.getLogger(__name__)
 
@@ -83,6 +86,9 @@ class PlaywrightLinkedinAPI:
         match res.status:
             case 401:
                 logger.error("LinkedIn API → 401 Unauthorized (session expired or blocked)")
+                tracker = UsageTracker(ASSETS_DIR)
+                tracker.record_health_event(self.session.handle, "restricted", details="LinkedIn API 401 Unauthorized")
+                send_alert(f"Authentication Failed for @{self.session.handle}. LinkedIn returned 401.", category="security")
                 raise AuthenticationError("LinkedIn API returned 401 Unauthorized.")
 
             case 403 | 404:

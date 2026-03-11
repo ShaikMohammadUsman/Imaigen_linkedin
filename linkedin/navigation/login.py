@@ -208,6 +208,67 @@ def init_playwright_session(session: "AccountSession", handle: str):
     logger.info(colored("Browser awake and fully authenticated!", "green", attrs=["bold"]))
 
 
+def manual_login_checkpoint(handle: str):
+    """
+    Opens a non-headless browser for the user to manually login.
+    Detects once login is successful and saves the storage state.
+    """
+    logger.info(colored(f"🛡️ Starting Manual Login Checkpoint for @{handle}", "cyan", attrs=["bold"]))
+    logger.info("Please use the browser window to login. The system will save your session once you reach the Feed.")
+    
+    config = get_account_config(handle)
+    state_file = Path(config["cookie_file"])
+    
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=False, slow_mo=100)
+        context = browser.new_context()
+        Stealth().apply_stealth_sync(context)
+        page = context.new_page()
+        
+        # Navigate to login
+        page.goto(LINKEDIN_LOGIN_URL, wait_until="networkidle")
+        
+        print("\n" + "🚨"*20)
+        print(f"   AUTH ACTION REQUIRED: @{handle}")
+        print("   1. A BROWSER WINDOW HAS OPENED ON YOUR MAC.")
+        print("   2. PLEASE LOGIN MANUALLY (GOOGLE OR DIRECT).")
+        print("   3. SOLVE ANY CAPTCHAS OR MFA CHALLENGES.")
+        print("   4. ONCE YOU REACH THE FEED, SCRIPT WILL CONTINUE.")
+        print("🚨"*20 + "\n")
+        
+        try:
+            # Wait for either /feed or any page that suggests we are logged in
+            # giving a very generous timeout
+            page.wait_for_url(lambda l: "/feed" in l or "/checkpoint" in l, timeout=600000)
+            
+            # If we hit a checkpoint, wait for it to pass
+            if "/checkpoint" in page.url:
+                logger.info("Security checkpoint detected. Please solve it in the browser...")
+                page.wait_for_url(lambda l: "/feed" in l, timeout=300000)
+
+            logger.info(colored("🎉 Login verified! Capturing fresh session cookies...", "green", attrs=["bold"]))
+            
+            # Additional small delay to ensure all cookies are set
+            import time
+            time.sleep(3)
+            
+            state_file.parent.mkdir(parents=True, exist_ok=True)
+            context.storage_state(path=str(state_file))
+            logger.info(f"✅ Session updated successfully: {state_file}")
+            
+            # Reset health status to HEALTHY since we just proved we can log in
+            from linkedin.usage_tracker import UsageTracker
+            tracker = UsageTracker(ASSETS_DIR)
+            tracker.reset_health(handle)
+            
+            return True
+        except Exception as e:
+            logger.error(f"❌ Checkpoint session failed: {e}")
+            return False
+            # We DONT close the browser immediately on failure so user can see why
+        finally:
+            browser.close()
+
 if __name__ == "__main__":
     import sys
 
@@ -220,11 +281,20 @@ if __name__ == "__main__":
         datefmt="%H:%M:%S",
     )
 
-    if len(sys.argv) != 2:
-        print("Usage: python -m linkedin.navigation.login <handle>")
+    if len(sys.argv) < 2:
+        print("Usage: python -m linkedin.navigation.login <handle> [--checkpoint]")
         sys.exit(1)
 
     handle = sys.argv[1]
+    is_checkpoint = "--checkpoint" in sys.argv
+
+    if is_checkpoint:
+        success = manual_login_checkpoint(handle)
+        if success:
+            print(f"✅ Checkpoint complete for @{handle}")
+        else:
+            print(f"❌ Checkpoint failed for @{handle}")
+        sys.exit(0 if success else 1)
 
     session = get_session(
         handle=handle,

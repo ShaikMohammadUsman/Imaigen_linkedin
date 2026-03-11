@@ -213,6 +213,21 @@ class AccountSession:
         self.db.close()
         logger.info("Account session closed → %s", self.handle)
 
+    def reboot_browser(self):
+        """
+        Force-closes the current browser and re-initializes it.
+        Useful after updating cookies/storage state.
+        """
+        logger.info(f"🔄 Rebooting browser engine for {self.handle}...")
+        try:
+            if self.context: self.context.close()
+            if self.browser: self.browser.close()
+            if self.playwright: self.playwright.stop()
+        except: pass
+        
+        self.page = self.context = self.browser = self.playwright = None
+        self.ensure_browser()
+
     def __del__(self):
         try:
             self.close()

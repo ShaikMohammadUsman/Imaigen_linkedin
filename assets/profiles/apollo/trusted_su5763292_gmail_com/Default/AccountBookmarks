@@ -1,0 +1,37 @@
+{
+   "checksum": "bd34a4e61311896818fe45d26f277b30",
+   "roots": {
+      "bookmark_bar": {
+         "children": [  ],
+         "date_added": "13417265694887725",
+         "date_last_used": "0",
+         "date_modified": "0",
+         "guid": "0bc5d13f-2cba-5d74-951f-3f233fe6c908",
+         "id": "5",
+         "name": "Bookmarks bar",
+         "type": "folder"
+      },
+      "other": {
+         "children": [  ],
+         "date_added": "13417265694887725",
+         "date_last_used": "0",
+         "date_modified": "0",
+         "guid": "82b081ec-3dd3-529c-8475-ab6c344590dd",
+         "id": "6",
+         "name": "Other bookmarks",
+         "type": "folder"
+      },
+      "synced": {
+         "children": [  ],
+         "date_added": "13417265694887725",
+         "date_last_used": "0",
+         "date_modified": "0",
+         "guid": "4cf2e351-0e85-532b-bb37-df045d8f8d0f",
+         "id": "7",
+         "name": "Mobile Bookmarks",
+         "type": "folder"
+      }
+   },
+   "sync_metadata": "CuABCr8BCIiBAhK4ASAAkgGjAQqgAQoOY2hyb21lX3N5bmNfYm0SBTUxIWJtGhIJFX0zU1hMBgARFX0zU1hMBgAiNAmywAxTWEwGABADGRsNTfzyNOZpIAEqHDUxIWJtL2ZkOjkxNjM3MjM1NTk0Njg4OTMxNjEiNAmywAxTWEwGABADGRsNTfzyNOZpIAEqHDUxIWJtL2ZkOjkxNjM3MjM1NTk0Njg4OTMxNjEpB9E0U1hMBgDqAQwIoNKqzQYQ2O6SzAMSACoYcExHdkNMVnpITVFIU0xSYWN6V2E5QT09SAMSwwEIBxK+AQocbmpnRHU4OGVDcnZYcDg2cEQ3ZkhHY3FGcDg4PRJmWjpBRHF0QVp6ZkpNeTBJTTVxSTIzQ0RiN0pEZ04wSWVKRU5IWStzNlNqeHRmZStuT1F4blJTRjVwSElaTTgvdWRBYVM2V1g3SDBnWW52ZWZ1RGIyMTdzM3lRNm82MXlNUDNkQT09GAAgACgAMNCXn6/qipMDOABAAEoceXpOQjAxY241NEE3Y1JVMHVUKy9QZ21UdFVvPVoAZQAAAAASqwEIBRKmAQoceXhKLzZmdmtlY3I3a3A1RVF6QjR0V0xwZGJFPRJOWjpBRHF0QVp5Y2hLMkx4eHB5YzI1WE9nazNjaWEzbU9JM2dkeThTM0lhbVJGNVNtaHNidEo5TWlpQVQzcW1KQjdiS1NIMXVxV3dmc0VvGAAgACgAMNCXn6/qipMDOABAAEocYVJDV0xnaEY5YjVJbnFLSUR2dUovanZRa0ZjPVoAZQAAAAASwwEIBhK+AQocWWNTVG9udkVTUHdxQ3M0TDJjclZodjY4TDk4PRJmWjpBRHF0QVp4NEowbUd2SnlOTVE1elJlcDQyR0w3OVpNeUNDU3F0dnBqRHc1eCtJS2RIcVVYNVhpajVibXhwSExwUjlwVmtYbURaVGtWY1pJdDJaOVpSTmdNNnlqNzBsMjBIUT09GAAgACgAMNCXn6/qipMDOABAAEocb1BWa2h3QlJiVjY1S0NXUjIrSU9OSFdvT3U4PVoAZQAAAAAwATgA",
+   "version": 1
+}

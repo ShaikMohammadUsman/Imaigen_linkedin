@@ -49,7 +49,13 @@ def call_llm(prompt: str) -> str:
     return response.content.strip()
 
 
-def render_template(session: "AccountSession", template_file: str, template_type: str, profile: dict) -> str:
+def render_template(
+    session: "AccountSession", 
+    template_file: str, 
+    template_type: str, 
+    profile: dict,
+    include_link: bool = True
+) -> str:
     context = {**profile}
 
     logger.debug("Available template variables: %s", sorted(context.keys()))
@@ -75,13 +81,15 @@ def render_template(session: "AccountSession", template_file: str, template_type
     # 2. 'job_id' column in CSV (constructed)
     # 3. Global 'booking_link' in config
     
-    booking_link = profile.get("job_link")
-    
-    if not booking_link and profile.get("job_id"):
-        booking_link = f"https://thescooter.ai/home/careers/{profile['job_id']}"
+    if include_link:
+        booking_link = profile.get("job_link")
         
-    if not booking_link:
-        booking_link = session.config.get("booking_link", None)
+        if not booking_link and profile.get("job_id"):
+            booking_link = f"https://thescooter.ai/home/careers/{profile['job_id']}"
+            
+        if not booking_link:
+            booking_link = session.config.get("booking_link", None)
 
-    rendered += f"\n{booking_link}" if booking_link else ""
+        rendered += f"\n{booking_link}" if booking_link else ""
+        
     return rendered

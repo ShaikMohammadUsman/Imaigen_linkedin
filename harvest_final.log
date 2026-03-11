@@ -1,0 +1,73 @@
+2026-03-10 16:54:18,412 - ApolloCLI - INFO - 🚀 Initializing Apollo Harvest for usman@thescooter.ai
+2026-03-10 16:54:19,258 - ApolloSession - INFO - 🧹 Force-cleared ghost lock: SingletonSocket
+2026-03-10 16:54:19,259 - ApolloSession - INFO - 🧹 Force-cleared ghost lock: SingletonCookie
+2026-03-10 16:54:19,260 - ApolloSession - INFO - 🧹 Force-cleared ghost lock: SingletonLock
+2026-03-10 16:54:19,260 - ApolloSession - INFO - 🚀 Attempting to launch Chrome 🌐...
+2026-03-10 16:59:53,668 - ApolloSession - WARNING - ⚠️ Chrome 🌐 failed: BrowserType.launch_persistent_context: Protocol error (Browser.getWindowForTarget): Browser window not found
+Call log:
+  - <launching> /Applications/Google Chrome.app/Contents/MacOS/Google Chrome --disable-field-trial-config --disable-background-networking --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-back-forward-cache --disable-breakpad --disable-client-side-phishing-detection --disable-component-extensions-with-background-pages --disable-component-update --no-default-browser-check --disable-default-apps --disable-dev-shm-usage --disable-extensions --disable-features=AvoidUnnecessaryBeforeUnloadCheckSync,BoundaryEventDispatchTracksNodeRemoval,DestroyProfileOnBrowserClose,DialMediaRouteProvider,GlobalMediaControls,HttpsUpgrades,LensOverlay,MediaRouter,PaintHolding,ThirdPartyStoragePartitioning,Translate,AutoDeElevate,RenderDocument,OptimizationHints --enable-features=CDPScreenshotNewSurface --allow-pre-commit-input --disable-hang-monitor --disable-ipc-flooding-protection --disable-popup-blocking --disable-prompt-on-repost --disable-renderer-backgrounding --force-color-profile=srgb --metrics-recording-only --no-first-run --password-store=basic --use-mock-keychain --no-service-autorun --export-tagged-pdf --disable-search-engine-choice-screen --unsafely-disable-devtools-self-xss-warnings --edge-skip-compat-layer-relaunch --disable-infobars --disable-search-engine-choice-screen --disable-sync --enable-unsafe-swiftshader --no-sandbox --disable-blink-features=AutomationControlled --disable-features=IsolateOrigins,site-per-process --no-sandbox --user-data-dir=/Users/shaikmohammadusman/Desktop/Work_Project/Linkedin_Scraping/assets/profiles/apollo/trusted_usman_thescooter_ai --remote-debugging-pipe about:blank
+  - <launched> pid=53432
+  - [pid=53432][err] [53432:776159:0310/165420.995310:ERROR:mojo/public/cpp/platform/named_platform_channel_mac.cc:44] bootstrap_check_in com.google.Chrome.apps.EBAF7B10BCBEF620131172F9AC136DAFAE9326FAE9FE11B71B4982C6869A0CC1: Permission denied (1100)
+  - [pid=53432][err] [53432:776142:0310/165420.997889:ERROR:components/segmentation_platform/internal/database/ukm_database_backend.cc:148] Failed to open UKM database: 0 database is locked
+  - [pid=53432][err] [53432:776162:0310/165439.904043:ERROR:components/services/storage/service_worker/service_worker_storage.cc:1814] Failed to delete the database: Database IO error
+  - [pid=53432][err] [53432:776060:0310/165451.026859:ERROR:content/browser/network_service_instance_impl.cc:610] Network service crashed or was terminated, restarting service.
+  - [pid=53432][err] Created TensorFlow Lite XNNPACK delegate for CPU.
+  - [pid=53432] <gracefully close start>
+  - [pid=53432][err] Trying to load the allocator multiple times. This is *not* supported.
+  - [pid=53432][err] [53432:776144:0310/165452.312570:ERROR:google_apis/gcm/engine/gcm_store_impl.cc:321] Failed to open database /Users/shaikmohammadusman/Desktop/Work_Project/Linkedin_Scraping/assets/profiles/apollo/trusted_usman_thescooter_ai/Profile 1/GCM Store: IO error: /Users/shaikmohammadusman/Desktop/Work_Project/Linkedin_Scraping/assets/profiles/apollo/trusted_usman_thescooter_ai/Profile 1/GCM Store/LOCK: No further details. (ChromeMethodBFE: 15::LockFile::1)
+  - [pid=53432] <kill>
+  - [pid=53432] <will force kill>
+  - [pid=53432] exception while trying to kill process: Error: kill ESRCH
+
+2026-03-10 16:59:56,706 - ApolloSession - INFO - 🚀 Attempting to launch Brave 🦁...
+2026-03-10 17:00:02,859 - ApolloSession - WARNING - ⚠️ Brave 🦁 failed: BrowserType.launch_persistent_context: Target page, context or browser has been closed
+Browser logs:
+
+<launching> /Applications/Brave Browser.app/Contents/MacOS/Brave Browser --disable-field-trial-config --disable-background-networking --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-back-forward-cache --disable-breakpad --disable-client-side-phishing-detection --disable-component-extensions-with-background-pages --disable-component-update --no-default-browser-check --disable-default-apps --disable-dev-shm-usage --disable-extensions --disable-features=AvoidUnnecessaryBeforeUnloadCheckSync,BoundaryEventDispatchTracksNodeRemoval,DestroyProfileOnBrowserClose,DialMediaRouteProvider,GlobalMediaControls,HttpsUpgrades,LensOverlay,MediaRouter,PaintHolding,ThirdPartyStoragePartitioning,Translate,AutoDeElevate,RenderDocument,OptimizationHints --enable-features=CDPScreenshotNewSurface --allow-pre-commit-input --disable-hang-monitor --disable-ipc-flooding-protection --disable-popup-blocking --disable-prompt-on-repost --disable-renderer-backgrounding --force-color-profile=srgb --metrics-recording-only --no-first-run --password-store=basic --use-mock-keychain --no-service-autorun --export-tagged-pdf --disable-search-engine-choice-screen --unsafely-disable-devtools-self-xss-warnings --edge-skip-compat-layer-relaunch --disable-infobars --disable-search-engine-choice-screen --disable-sync --enable-unsafe-swiftshader --no-sandbox --disable-blink-features=AutomationControlled --disable-features=IsolateOrigins,site-per-process --no-sandbox --user-data-dir=/Users/shaikmohammadusman/Desktop/Work_Project/Linkedin_Scraping/assets/profiles/apollo/trusted_usman_thescooter_ai --remote-debugging-pipe about:blank
+<launched> pid=54664
+[pid=54664][out] Opening in existing browser session.
+Call log:
+  - <launching> /Applications/Brave Browser.app/Contents/MacOS/Brave Browser --disable-field-trial-config --disable-background-networking --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-back-forward-cache --disable-breakpad --disable-client-side-phishing-detection --disable-component-extensions-with-background-pages --disable-component-update --no-default-browser-check --disable-default-apps --disable-dev-shm-usage --disable-extensions --disable-features=AvoidUnnecessaryBeforeUnloadCheckSync,BoundaryEventDispatchTracksNodeRemoval,DestroyProfileOnBrowserClose,DialMediaRouteProvider,GlobalMediaControls,HttpsUpgrades,LensOverlay,MediaRouter,PaintHolding,ThirdPartyStoragePartitioning,Translate,AutoDeElevate,RenderDocument,OptimizationHints --enable-features=CDPScreenshotNewSurface --allow-pre-commit-input --disable-hang-monitor --disable-ipc-flooding-protection --disable-popup-blocking --disable-prompt-on-repost --disable-renderer-backgrounding --force-color-profile=srgb --metrics-recording-only --no-first-run --password-store=basic --use-mock-keychain --no-service-autorun --export-tagged-pdf --disable-search-engine-choice-screen --unsafely-disable-devtools-self-xss-warnings --edge-skip-compat-layer-relaunch --disable-infobars --disable-search-engine-choice-screen --disable-sync --enable-unsafe-swiftshader --no-sandbox --disable-blink-features=AutomationControlled --disable-features=IsolateOrigins,site-per-process --no-sandbox --user-data-dir=/Users/shaikmohammadusman/Desktop/Work_Project/Linkedin_Scraping/assets/profiles/apollo/trusted_usman_thescooter_ai --remote-debugging-pipe about:blank
+  - <launched> pid=54664
+  - [pid=54664][out] Opening in existing browser session.
+  - [pid=54664] <gracefully close start>
+  - [pid=54664] <kill>
+  - [pid=54664] <will force kill>
+  - [pid=54664] exception while trying to kill process: Error: kill ESRCH
+  - [pid=54664] <process did exit: exitCode=0, signal=null>
+  - [pid=54664] starting temporary directories cleanup
+  - [pid=54664] finished temporary directories cleanup
+  - [pid=54664] <gracefully close end>
+
+2026-03-10 17:00:05,915 - ApolloSession - INFO - 🚀 Attempting to launch Bundled Playwright Browser ⚙️...
+2026-03-10 17:00:09,603 - ApolloSession - WARNING - ⚠️ Bundled Playwright Browser ⚙️ failed: BrowserType.launch_persistent_context: Failed to create a ProcessSingleton for your profile directory. This usually means that the profile is already in use by another instance of Chromium.
+Call log:
+  - <launching> /Users/shaikmohammadusman/Library/Caches/ms-playwright/chromium-1208/chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing --disable-field-trial-config --disable-background-networking --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-back-forward-cache --disable-breakpad --disable-client-side-phishing-detection --disable-component-extensions-with-background-pages --disable-component-update --no-default-browser-check --disable-default-apps --disable-dev-shm-usage --disable-extensions --disable-features=AvoidUnnecessaryBeforeUnloadCheckSync,BoundaryEventDispatchTracksNodeRemoval,DestroyProfileOnBrowserClose,DialMediaRouteProvider,GlobalMediaControls,HttpsUpgrades,LensOverlay,MediaRouter,PaintHolding,ThirdPartyStoragePartitioning,Translate,AutoDeElevate,RenderDocument,OptimizationHints --enable-features=CDPScreenshotNewSurface --allow-pre-commit-input --disable-hang-monitor --disable-ipc-flooding-protection --disable-popup-blocking --disable-prompt-on-repost --disable-renderer-backgrounding --force-color-profile=srgb --metrics-recording-only --no-first-run --password-store=basic --use-mock-keychain --no-service-autorun --export-tagged-pdf --disable-search-engine-choice-screen --unsafely-disable-devtools-self-xss-warnings --edge-skip-compat-layer-relaunch --enable-automation --disable-infobars --disable-search-engine-choice-screen --disable-sync --enable-unsafe-swiftshader --no-sandbox --user-data-dir=/Users/shaikmohammadusman/Desktop/Work_Project/Linkedin_Scraping/assets/profiles/apollo/trusted_usman_thescooter_ai --remote-debugging-pipe about:blank
+  - <launched> pid=54688
+  - [pid=54688][err] [54688:784352:0310/170009.165962:ERROR:chrome/browser/process_singleton_posix.cc:345] Failed to create /Users/shaikmohammadusman/Desktop/Work_Project/Linkedin_Scraping/assets/profiles/apollo/trusted_usman_thescooter_ai/SingletonLock: File exists (17)
+  - [pid=54688][err] [54688:784352:0310/170009.171006:ERROR:chrome/app/chrome_main_delegate.cc:513] Failed to create a ProcessSingleton for your profile directory. This means that running multiple instances would start multiple browser processes rather than opening a new window in the existing process. Aborting now to avoid profile corruption.
+  - [pid=54688] <gracefully close start>
+  - [pid=54688] <kill>
+  - [pid=54688] <will force kill>
+  - [pid=54688] exception while trying to kill process: Error: kill EPERM
+  - [pid=54688] <process did exit: exitCode=21, signal=null>
+  - [pid=54688] starting temporary directories cleanup
+  - [pid=54688] finished temporary directories cleanup
+  - [pid=54688] <gracefully close end>
+
+Traceback (most recent call last):
+  File "/Users/shaikmohammadusman/Desktop/Work_Project/Linkedin_Scraping/apollo_entry.py", line 63, in <module>
+    main()
+    ~~~~^^
+  File "/Users/shaikmohammadusman/Desktop/Work_Project/Linkedin_Scraping/apollo_entry.py", line 43, in main
+    session = manager.get_session(
+        email=account.get("email"),
+        password=account.get("password"),
+        login_method=account.get("login_method", "google")
+    )
+  File "/Users/shaikmohammadusman/Desktop/Work_Project/Linkedin_Scraping/scooter_apollo/sessions.py", line 199, in get_session
+    self.session.init_browser(headless=False) # Always false for interactive login if needed
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^
+  File "/Users/shaikmohammadusman/Desktop/Work_Project/Linkedin_Scraping/scooter_apollo/sessions.py", line 89, in init_browser
+    raise Exception("Failed to launch any browser. Please ensure Chrome or Brave is closed.")
+Exception: Failed to launch any browser. Please ensure Chrome or Brave is closed.

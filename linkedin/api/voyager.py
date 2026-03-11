@@ -49,6 +49,24 @@ class Education:
     date_range: Optional[DateRange] = None
     urn: Optional[str] = None
 
+@dataclass
+class Certification:
+    name: str
+    authority: Optional[str] = None
+    license_number: Optional[str] = None
+    display_source: Optional[str] = None
+    url: Optional[str] = None
+    date_range: Optional[DateRange] = None
+    urn: Optional[str] = None
+
+@dataclass
+class Project:
+    title: str
+    description: Optional[str] = None
+    url: Optional[str] = None
+    date_range: Optional[DateRange] = None
+    urn: Optional[str] = None
+
 
 @dataclass
 class LinkedInProfile:
@@ -62,13 +80,19 @@ class LinkedInProfile:
     summary: Optional[str] = None
     public_identifier: Optional[str] = None
     location_name: Optional[str] = None
+    state: Optional[str] = None
+    country: Optional[str] = None
     geo: Optional[Dict[str, Any]] = None
     industry: Optional[Dict[str, Any]] = None
 
     positions: List[Position] = field(default_factory=list)
     educations: List[Education] = field(default_factory=list)
+    certifications: List[Certification] = field(default_factory=list)
+    projects: List[Project] = field(default_factory=list)
     skills: List[str] = field(default_factory=list)
     profile_picture: Optional[str] = None
+    email: Optional[str] = None
+    phone: Optional[str] = None
 
     connection_distance: Optional[ConnectionDistance] = None
     connection_degree: Optional[int] = None
@@ -135,6 +159,28 @@ def _enrich_education(edu: dict, urn_map: Dict[str, dict]) -> Education:
         field_of_study=edu.get("fieldOfStudy"),
         date_range=_date_range_from_raw(edu.get("dateRange")),
         urn=edu.get("entityUrn"),
+    )
+
+
+def _enrich_certification(cert: dict, urn_map: Dict[str, dict]) -> Certification:
+    return Certification(
+        name=cert.get("name") or "Unknown Certification",
+        authority=cert.get("authorityName"),
+        license_number=cert.get("licenseNumber"),
+        display_source=cert.get("displaySource"),
+        url=cert.get("url"),
+        date_range=_date_range_from_raw(cert.get("timePeriod")),
+        urn=cert.get("entityUrn"),
+    )
+
+
+def _enrich_project(proj: dict, urn_map: Dict[str, dict]) -> Project:
+    return Project(
+        title=proj.get("title") or "Unknown Project",
+        description=proj.get("description"),
+        url=proj.get("url"),
+        date_range=_date_range_from_raw(proj.get("timePeriod")),
+        urn=proj.get("entityUrn"),
     )
 
 
@@ -208,6 +254,20 @@ def parse_linkedin_voyager_response(
     # Extract connection info
     connection_distance, connection_degree = _extract_connection_info(profile_entity, urn_map)
 
+    # Geo Resolution
+    geo = _resolve_star_field(profile_entity, urn_map, "*geo")
+    country_name = None
+    state_name = None
+    if geo:
+        country_entity = _resolve_star_field(geo, urn_map, "*country")
+        if country_entity:
+            country_name = country_entity.get("defaultLocalizedName")
+            
+        # Try to extract state from "Cambridge, Massachusetts" or similar
+        localized_no_country = geo.get("defaultLocalizedNameWithoutCountryName")
+        if localized_no_country and "," in localized_no_country:
+            state_name = localized_no_country.split(",")[-1].strip()
+
     # Build positions
     positions: List[Position] = []
     pos_groups_urn = profile_entity.get("*profilePositionGroups")
@@ -237,6 +297,28 @@ def parse_linkedin_voyager_response(
                 edu = urn_map.get(edu_urn)
                 if edu:
                     educations.append(_enrich_education(edu, urn_map))
+
+    # Build Certifications
+    certifications: List[Certification] = []
+    cert_urn = profile_entity.get("*profileCertifications")
+    if cert_urn:
+        cert_coll = urn_map.get(cert_urn)
+        if cert_coll and cert_coll.get("*elements"):
+            for urn in cert_coll["*elements"]:
+                cert = urn_map.get(urn)
+                if cert:
+                    certifications.append(_enrich_certification(cert, urn_map))
+
+    # Build Projects
+    projects: List[Project] = []
+    proj_urn = profile_entity.get("*profileProjects")
+    if proj_urn:
+        proj_coll = urn_map.get(proj_urn)
+        if proj_coll and proj_coll.get("*elements"):
+            for urn in proj_coll["*elements"]:
+                proj = urn_map.get(urn)
+                if proj:
+                    projects.append(_enrich_project(proj, urn_map))
 
     # Build Skills
     skills: List[str] = []
@@ -277,13 +359,19 @@ def parse_linkedin_voyager_response(
         "summary": profile_entity.get("summary"),
         "public_identifier": profile_entity.get("publicIdentifier"),
         "location_name": profile_entity.get("locationName"),
-        "geo": _resolve_star_field(profile_entity, urn_map, "*geo"),
+        "state": state_name,
+        "geo": geo,
+        "country": country_name,
         "industry": _resolve_star_field(profile_entity, urn_map, "*industry"),
         "url": f"https://www.linkedin.com/in/{profile_entity.get('publicIdentifier', '')}/",
         "positions": [asdict(p) for p in positions],
         "educations": [asdict(e) for e in educations],
+        "certifications": [asdict(c) for c in certifications],
+        "projects": [asdict(p) for p in projects],
         "skills": skills,
         "profile_picture": profile_picture,
+        "email": profile_entity.get("emailAddress"), # Sometimes available in certain API contexts
+        "phone": profile_entity.get("phoneNumbers", [{}])[0].get("number") if profile_entity.get("phoneNumbers") else None,
         "connection_distance": connection_distance,
         "connection_degree": connection_degree,
     }

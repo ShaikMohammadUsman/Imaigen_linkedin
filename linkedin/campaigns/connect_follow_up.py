@@ -75,6 +75,23 @@ def process_profile_row(
                 
             if not perform_connections:
                 return None
+            
+            # --- Personalize Note if missing ---
+            if not profile.get('note'):
+                from linkedin.templates.renderer import render_template
+                try:
+                    template_file = session.config.get("connection_template")
+                    template_type = session.config.get("connection_template_type", "ai_prompt")
+                    if template_file:
+                        logger.info(f"🎨 Generating AI connection note for {public_identifier}...")
+                        note = render_template(session, template_file, template_type, profile, include_link=False)
+                        # Ensure it's not too long for LinkedIn (300 chars limit)
+                        if len(note) > 300:
+                            note = note[:297] + "..."
+                        profile['note'] = note
+                except Exception as e:
+                    logger.error(f"Failed to generate AI connection note for {public_identifier}: {e}")
+            
             new_state = send_connection_request(handle=handle, profile=profile)
             profile = None if new_state != ProfileState.CONNECTED else profile
         case ProfileState.PENDING:
@@ -168,10 +185,23 @@ def process_profiles(handle, session, profiles: list[dict], enrich_only: bool = 
                 )
                 send_alert(f"Weekly Connection Limit Reached for @{handle}.", category="limit")
                 continue_same_profile = False
-            except (AuthenticationError, DetectionError) as e:
+            except AuthenticationError as e:
+                from linkedin.navigation.login import manual_login_checkpoint
+                logger.warning(colored(f"🚨 AUTH FAILURE (401): {e}", "red", attrs=["bold"]))
+                logger.info(colored("🛡️ TRIGGERING MANUAL LOGIN POPUP...", "cyan", attrs=["bold"]))
+                
+                # Pop the manual browser
+                if manual_login_checkpoint(handle):
+                    logger.info(colored("✅ Manual Login Successful! Rebooting bot...", "green", attrs=["bold"]))
+                    session.reboot_browser()
+                    continue # This RETRIES the 'while continue_same_profile' loop
+                else:
+                    logger.error(colored("❌ Manual Login Failed. Stopping campaign.", "red", attrs=["bold"]))
+                    return
+            except DetectionError as e:
                 # Note: utils.py already records health event and alerts for these
-                logger.error(colored(f"🛑 CRITICAL ERROR: {e}. Stopping all operations.", "red", attrs=["bold"]))
-                return # Exit the entire function
+                logger.error(colored(f"🛑 DETECTION ERROR: {e}. Stopping all operations.", "red", attrs=["bold"]))
+                return
             except PlaywrightTimeoutError as e:
                 logger.error(f"Timeout processing {simple_profile['public_identifier']}: {e}")
                 tracker.record_health_event(handle, "timeout", details=str(e))

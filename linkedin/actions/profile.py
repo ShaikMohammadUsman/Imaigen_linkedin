@@ -29,6 +29,17 @@ def scrape_profile(handle: str, profile: dict):
     session.page.goto(url, wait_until="domcontentloaded", timeout=60000)
     session.page.bring_to_front()
     
+    # 🕵️ Verify we aren't redirected to a wall
+    current_url = session.page.url.lower()
+    if any(q in current_url for q in ["/login", "/password-reset", "/checkpoint", "/challenge"]):
+        from linkedin.navigation.exceptions import AuthenticationError, DetectionError
+        if "/checkpoint" in current_url or "/challenge" in current_url:
+            logger.error(colored(f"🚨 Security Challenge detected at {current_url}", "red", attrs=["bold"]))
+            raise DetectionError(f"Security wall hit: {current_url}")
+        else:
+            logger.warning(colored(f"🚫 Session expired or blocked. Redirected to: {current_url}", "yellow", attrs=["bold"]))
+            raise AuthenticationError(f"Session invalidated. Redirected to: {current_url}")
+
     # 2. Wait and Scroll (Mimic human reading)
     session.wait(min_delay=5, max_delay=10) # Initial human-like pause
     session.human_scroll()
