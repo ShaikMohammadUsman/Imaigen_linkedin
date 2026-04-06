@@ -1,0 +1,31 @@
+# LinkedIn Reply Checker Service
+# macOS LaunchAgent configuration
+
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.linkedin.replychecker</string>
+    
+    <key>ProgramArguments</key>
+    <array>
+        <string>/Users/shaikmohammadusman/Desktop/Work_Project/Linkedin_Scraping/run_reply_checker.sh</string>
+    </array>
+    
+    <key>WorkingDirectory</key>
+    <string>/Users/shaikmohammadusman/Desktop/Work_Project/Linkedin_Scraping</string>
+    
+    <key>RunAtLoad</key>
+    <true/>
+    
+    <key>KeepAlive</key>
+    <true/>
+    
+    <key>StandardOutPath</key>
+    <string>/Users/shaikmohammadusman/Desktop/Work_Project/Linkedin_Scraping/logs/reply_checker.log</string>
+    
+    <key>StandardErrorPath</key>
+    <string>/Users/shaikmohammadusman/Desktop/Work_Project/Linkedin_Scraping/logs/reply_checker_error.log</string>
+</dict>
+</plist>

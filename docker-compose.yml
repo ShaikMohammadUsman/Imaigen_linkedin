@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  linkedin-bot:
+    build: .
+    container_name: scooter-linkedin-bot
+    ports:
+      - "8000:8000"
+    volumes:
+      # Mount 'assets' directory to persist DB, cookies, and results
+      - ./assets:/app/assets
+      # Mount 'logs' directory
+      - ./logs:/app/logs
+    environment:
+      - HEADLESS=true
+      - DISPLAY=:99
+      # Add other environment variables here (e.g., specific DB connection string later)
+    restart: unless-stopped
+    shm_size: '2gb' # Playwright needs shared memory for Chromium

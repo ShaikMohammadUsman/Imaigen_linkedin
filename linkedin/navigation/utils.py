@@ -1,0 +1,111 @@
+# linkedin/navigation/utils.py
+import logging
+from urllib.parse import unquote, urlparse, urljoin
+
+from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
+
+from linkedin.conf import FIXTURE_PAGES_DIR, OPPORTUNISTIC_SCRAPING, ASSETS_DIR
+from linkedin.navigation.exceptions import SkipProfile
+from linkedin.notifications import send_alert
+from linkedin.usage_tracker import UsageTracker
+
+logger = logging.getLogger(__name__)
+
+
+def goto_page(session: "AccountSession",
+              action,
+              expected_url_pattern: str,
+              timeout: int = 10_000,
+              error_message: str = "",
+              to_scrape=OPPORTUNISTIC_SCRAPING,
+              ):
+    from linkedin.db.profiles import add_profile_urls
+    page = session.page
+    action()
+    if not page:
+        return
+
+    try:
+        page.wait_for_url(lambda url: expected_url_pattern in unquote(url), timeout=timeout)
+    except PlaywrightTimeoutError:
+        pass  # we still continue and check URL below
+
+    session.wait(to_scrape=to_scrape)
+    
+    current = unquote(page.url).lower()
+    
+    # DETECTOR: Check for security challenges
+    if any(q in current for q in ["/checkpoint/", "/challenge/", "/check/verify"]):
+        from linkedin.navigation.exceptions import DetectionError
+        tracker = UsageTracker(ASSETS_DIR)
+        
+        event_type = "captcha" if "captcha" in current else "restricted"
+        tracker.record_health_event(session.handle, event_type, details=f"Challenge at: {current}")
+        send_alert(f"LinkedIn Security Challenge encountered: {event_type.title()} at {current}", category="security")
+        
+        logger.error(f"🚨 LinkedIn Detection Triggered! Page: {current}")
+        raise DetectionError(f"LinkedIn Security Challenge encountered at {current}")
+
+    # AUTHENTICATION CHECK: Check for login redirects
+    if any(q in current for q in ["/login", "/password-reset"]):
+        from linkedin.navigation.exceptions import AuthenticationError
+        logger.warning(f"🚫 Session expired or blocked. Redirected to: {current}")
+        raise AuthenticationError(f"Session invalidated. Redirected to: {current}")
+
+    if expected_url_pattern not in current:
+        raise RuntimeError(f"{error_message} → expected '{expected_url_pattern}' | got '{current}'")
+
+    logger.debug("Navigated to %s", page.url)
+    if OPPORTUNISTIC_SCRAPING:
+        try:
+            urls = _extract_in_urls(session)
+            add_profile_urls(session, list(urls))
+        except Exception as e:
+            logger.error(f"Failed to extract/save profile URLs after navigation: {e}", exc_info=True)
+
+
+def _extract_in_urls(session):
+    page = session.page
+    urls = set()
+    for link in page.locator('a[href*="/in/"]').all():
+        href = link.get_attribute("href")
+        if href and "/in/" in href:
+            # resolves relative + protocol-relative URLs
+            full_url = urljoin(page.url, href.strip())
+            clean = urlparse(full_url)._replace(query="", fragment="").geturl()
+            urls.add(clean)
+    logger.debug(f"Extracted {len(urls)} unique /in/ profiles")
+    return urls
+
+
+def get_top_card(session):
+    top_card = session.page.locator('section:has(div.top-card-background-hero-image)')
+
+    if top_card.count() == 0:
+        top_card = session.page.locator('section[data-member-id]')
+
+    if top_card.count() == 0:
+        top_card = session.page.locator('section.artdeco-card:has(> div.pv-top-card)')
+
+    if top_card.count() == 0:
+        top_card = session.page.locator('section[data-member-id] >> div.pv-top-card').locator('..')
+
+    if top_card.count() == 0:
+        top_card = session.page.locator('section:has(> div[class*="pv-top-card"])')
+
+    if top_card.count() == 0:
+        top_card = session.page.locator('section[componentkey*="com.linkedin.sdui.profile.card"]')
+
+    if top_card.count() == 0:
+        logger.info("Skipping profile")
+        raise SkipProfile("Top Card section not found")
+
+    return top_card.first  # there’s always only one
+
+
+def save_page(session: "AccountSession", profile: dict, ):
+    filepath = FIXTURE_PAGES_DIR / f"{profile.get('public_identifier')}.html"
+    html_content = session.page.content()
+    with open(filepath, "w", encoding="utf-8") as f:
+        f.write(html_content)
+    logger.info("Saved ambiguous connection status page → %s", filepath)

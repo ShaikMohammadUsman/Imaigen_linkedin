@@ -1,0 +1,42 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.env
+
+# MacOS
+.DS_Store
+
+# LinkedIn Project Specific
+assets/cookies/*.json
+assets/data/*.db
+assets/screenshots/
+assets/inputs/harvest_state.json
+assets/accounts.secrets.yaml
+assets/usage_stats.json
+assets/candidates_detailed.csv
+assets/roles.json
+debug_harvest_page_*.png
+logs/*.log
+
+# IDE
+.idea/
+.vscode/*.db
+*.txt
+*.log
+
+# Heavy Node/NPM dependencies
+node_modules/
+package-lock.json
+
+# Local Heavy Data & Databases
+*.db
+*.csv
+*.json
+test_*.py
+
+# Locally Generated Debug Screenshots
+debug_*.png
+debug_*.html
+output.json

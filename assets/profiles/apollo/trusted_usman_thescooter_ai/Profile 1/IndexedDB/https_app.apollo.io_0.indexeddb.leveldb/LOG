@@ -1,0 +1,103 @@
+2026/03/10-18:08:47.061 d48ba Reusing MANIFEST /Users/shaikmohammadusman/Desktop/Work_Project/Linkedin_Scraping/assets/profiles/apollo/trusted_usman_thescooter_ai/Profile 1/IndexedDB/https_app.apollo.io_0.indexeddb.leveldb/MANIFEST-000001
+2026/03/10-18:08:47.062 d48ba Recovering log #750
+2026/03/10-18:08:47.076 d48ba Reusing old log /Users/shaikmohammadusman/Desktop/Work_Project/Linkedin_Scraping/assets/profiles/apollo/trusted_usman_thescooter_ai/Profile 1/IndexedDB/https_app.apollo.io_0.indexeddb.leveldb/000750.log 
+2026/03/10-18:09:11.090 d48da Level-0 table #756: started
+2026/03/10-18:09:11.135 d48da Level-0 table #756: 1781616 bytes OK
+2026/03/10-18:09:11.139 d48da Delete type=0 #750
+2026/03/10-18:09:16.219 d48da Compacting 1@1 + 2@2 files
+2026/03/10-18:09:16.300 d48da Generated table #757@1: 15340 keys, 2177662 bytes
+2026/03/10-18:09:16.430 d48da Generated table #758@1: 27830 keys, 2098908 bytes
+2026/03/10-18:09:16.430 d48da Compacted 1@1 + 2@2 files => 4276570 bytes
+2026/03/10-18:09:16.433 d48da compacted to: files[ 0 0 7 0 0 0 0 ]
+2026/03/10-18:09:16.435 d48da Delete type=2 #752
+2026/03/10-18:09:16.435 d48da Delete type=2 #753
+2026/03/10-18:09:16.435 d48da Delete type=2 #756
+2026/03/10-18:09:17.289 d48da Level-0 table #760: started
+2026/03/10-18:09:17.315 d48da Level-0 table #760: 3359342 bytes OK
+2026/03/10-18:09:17.321 d48da Delete type=0 #755
+2026/03/10-18:09:18.346 d48da Level-0 table #762: started
+2026/03/10-18:09:18.396 d48da Level-0 table #762: 2855812 bytes OK
+2026/03/10-18:09:18.399 d48da Delete type=0 #759
+2026/03/10-18:09:18.436 d48da Level-0 table #764: started
+2026/03/10-18:09:18.456 d48da Level-0 table #764: 3164194 bytes OK
+2026/03/10-18:09:18.458 d48da Delete type=0 #761
+2026/03/10-18:09:18.754 d48ba Compacting 2@0 + 1@1 files
+2026/03/10-18:09:18.776 d48ba Generated table #765@0: 5157 keys, 244492 bytes
+2026/03/10-18:09:18.776 d48ba Compacted 2@0 + 1@1 files => 244492 bytes
+2026/03/10-18:09:18.778 d48ba compacted to: files[ 0 1 7 0 0 0 0 ]
+2026/03/10-18:09:19.368 d48db Compacting 1@1 + 2@2 files
+2026/03/10-18:09:19.450 d48db Generated table #766@1: 12551 keys, 2173244 bytes
+2026/03/10-18:09:19.565 d48db Generated table #767@1: 29347 keys, 2209514 bytes
+2026/03/10-18:09:19.565 d48db Compacted 1@1 + 2@2 files => 4382758 bytes
+2026/03/10-18:09:19.567 d48db compacted to: files[ 0 0 7 0 0 0 0 ]
+2026/03/10-18:09:19.567 d48db Delete type=2 #764
+2026/03/10-18:09:19.567 d48db Delete type=2 #760
+2026/03/10-18:09:19.567 d48db Delete type=2 #762
+2026/03/10-18:10:21.889 d48da Level-0 table #769: started
+2026/03/10-18:10:21.913 d48da Level-0 table #769: 3155693 bytes OK
+2026/03/10-18:10:21.919 d48da Delete type=0 #763
+2026/03/10-18:10:21.920 d48da Delete type=2 #758
+2026/03/10-18:10:21.920 d48da Delete type=2 #765
+2026/03/10-18:10:21.920 d48da Delete type=2 #757
+2026/03/10-18:10:51.799 d48da Compacting 1@1 + 2@2 files
+2026/03/10-18:10:51.885 d48da Generated table #770@1: 14658 keys, 2176211 bytes
+2026/03/10-18:10:51.942 d48da Generated table #771@1: 27265 keys, 2058306 bytes
+2026/03/10-18:10:51.942 d48da Compacted 1@1 + 2@2 files => 4234517 bytes
+2026/03/10-18:10:51.945 d48da compacted to: files[ 0 0 7 0 0 0 0 ]
+2026/03/10-18:10:51.946 d48da Delete type=2 #767
+2026/03/10-18:10:51.946 d48da Delete type=2 #766
+2026/03/10-18:10:51.946 d48da Delete type=2 #769
+2026/03/10-18:11:16.060 d48ba Level-0 table #773: started
+2026/03/10-18:11:16.090 d48ba Level-0 table #773: 2205589 bytes OK
+2026/03/10-18:11:16.096 d48ba Delete type=0 #768
+2026/03/10-18:11:16.306 d48ba Compacting 1@1 + 2@2 files
+2026/03/10-18:11:16.380 d48ba Generated table #774@1: 13970 keys, 2176613 bytes
+2026/03/10-18:11:16.488 d48ba Generated table #775@1: 28777 keys, 2170113 bytes
+2026/03/10-18:11:16.488 d48ba Compacted 1@1 + 2@2 files => 4346726 bytes
+2026/03/10-18:11:16.490 d48ba compacted to: files[ 0 0 7 0 0 0 0 ]
+2026/03/10-18:11:16.490 d48ba Delete type=2 #773
+2026/03/10-18:11:16.490 d48ba Delete type=2 #770
+2026/03/10-18:11:16.490 d48ba Delete type=2 #771
+2026/03/10-18:11:17.128 d48da Level-0 table #777: started
+2026/03/10-18:11:17.159 d48da Level-0 table #777: 3614083 bytes OK
+2026/03/10-18:11:17.162 d48da Delete type=0 #772
+2026/03/10-18:11:17.189 d48da Level-0 table #779: started
+2026/03/10-18:11:17.216 d48da Level-0 table #779: 3363364 bytes OK
+2026/03/10-18:11:17.218 d48da Delete type=0 #776
+2026/03/10-18:11:17.610 d48da Compacting 1@0 + 1@1 files
+2026/03/10-18:11:17.626 d48da Generated table #780@0: 2187 keys, 209619 bytes
+2026/03/10-18:11:17.626 d48da Compacted 1@0 + 1@1 files => 209619 bytes
+2026/03/10-18:11:17.628 d48da compacted to: files[ 0 1 7 0 0 0 0 ]
+2026/03/10-18:11:41.999 d48da Compacting 1@1 + 2@2 files
+2026/03/10-18:11:42.015 d48da Level-0 table #783: started
+2026/03/10-18:11:42.028 d48da Level-0 table #783: 3712303 bytes OK
+2026/03/10-18:11:42.034 d48da Delete type=2 #777
+2026/03/10-18:11:42.034 d48da Delete type=2 #779
+2026/03/10-18:11:42.034 d48da Delete type=0 #778
+2026/03/10-18:11:42.067 d48da Generated table #781@1: 13564 keys, 2175252 bytes
+2026/03/10-18:11:42.124 d48da Generated table #784@1: 29206 keys, 2201221 bytes
+2026/03/10-18:11:42.124 d48da Compacted 1@1 + 2@2 files => 4376473 bytes
+2026/03/10-18:11:42.128 d48da compacted to: files[ 1 0 7 0 0 0 0 ]
+2026/03/10-18:11:42.129 d48da Delete type=2 #775
+2026/03/10-18:11:42.129 d48da Delete type=2 #774
+2026/03/10-18:11:42.129 d48da Delete type=2 #780
+2026/03/10-18:11:42.169 d48da Moved #783 to level-1 3712303 bytes OK: files[ 0 1 7 0 0 0 0 ]
+2026/03/10-18:11:42.185 d48da Compacting 1@1 + 2@2 files
+2026/03/10-18:11:42.227 d48da Generated table #785@1: 16141 keys, 2184841 bytes
+2026/03/10-18:11:42.273 d48da Generated table #786@1: 26617 keys, 2014000 bytes
+2026/03/10-18:11:42.273 d48da Compacted 1@1 + 2@2 files => 4198841 bytes
+2026/03/10-18:11:42.275 d48da compacted to: files[ 0 0 7 0 0 0 0 ]
+2026/03/10-18:11:42.275 d48da Delete type=2 #784
+2026/03/10-18:11:42.275 d48da Delete type=2 #783
+2026/03/10-18:11:42.276 d48da Delete type=2 #781
+2026/03/10-18:19:12.012 d48da Level-0 table #788: started
+2026/03/10-18:19:12.039 d48da Level-0 table #788: 1383312 bytes OK
+2026/03/10-18:19:12.045 d48da Delete type=0 #782
+2026/03/10-18:20:12.019 d48da Compacting 1@1 + 2@2 files
+2026/03/10-18:20:12.107 d48da Generated table #789@1: 30440 keys, 2221844 bytes
+2026/03/10-18:20:12.125 d48da Generated table #790@1: 8317 keys, 646719 bytes
+2026/03/10-18:20:12.125 d48da Compacted 1@1 + 2@2 files => 2868563 bytes
+2026/03/10-18:20:12.127 d48da compacted to: files[ 0 0 7 0 0 0 0 ]
+2026/03/10-18:20:12.127 d48da Delete type=2 #788
+2026/03/10-18:20:12.127 d48da Delete type=2 #785
+2026/03/10-18:20:12.127 d48da Delete type=2 #786

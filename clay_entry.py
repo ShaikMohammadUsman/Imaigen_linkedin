@@ -1,0 +1,62 @@
+# clay_entry.py
+import argparse
+import logging
+import sys
+from scooter_clay.sessions import ClaySessionManager
+from scooter_clay.harvester import harvest_clay_leads
+from termcolor import colored
+
+# Setup logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(sys.stdout),
+        logging.FileHandler("clay_monitoring.log")
+    ]
+)
+logger = logging.getLogger("ClayCLI")
+
+def main():
+    parser = argparse.ArgumentParser(description="ScooterAI Clay Harvester")
+    parser.add_argument("--handle", required=True, help="Clay handle (email)")
+    parser.add_argument("--url", required=True, help="Clay workbook/table URL")
+    parser.add_argument("--limit", type=int, default=10, help="Max leads to capture")
+    
+    args = parser.parse_args()
+    
+    manager = ClaySessionManager()
+    try:
+        logger.info(colored(f"🚀 Initializing Clay Harvest for {args.handle}", "cyan", attrs=["bold"]))
+        session = manager.get_session(args.handle)
+        
+        # Start SQL Job Tracking
+        from linkedin.db.engine import Database
+        from linkedin.db.jobs import create_job, update_job_progress, end_job
+        
+        db = Database.from_handle(args.handle)
+        db_session = db.get_session()
+        job_id = create_job(db_session, args.handle, "clay_harvest", expected_limit=args.limit)
+        
+        try:
+            leads = harvest_clay_leads(session, args.url, limit=args.limit)
+            
+            if leads:
+                update_job_progress(db_session, job_id, len(leads))
+                logger.info(colored(f"✨ Clay Harvest Task Completed Successfully. Captured {len(leads)} leads.", "green", attrs=["bold"]))
+            else:
+                logger.warning(colored("⚠️ Task finished but no leads were captured. Check logs/screenshots.", "yellow"))
+            end_job(db_session, job_id, "completed")
+        except Exception as e:
+            end_job(db_session, job_id, "failed", str(e))
+            raise e
+        finally:
+            db.Session.remove()
+            
+    except Exception as e:
+        logger.error(colored(f"❌ Critical Failure during harvest: {e}", "red", attrs=["bold"]))
+    finally:
+        manager.close()
+
+if __name__ == "__main__":
+    main()
