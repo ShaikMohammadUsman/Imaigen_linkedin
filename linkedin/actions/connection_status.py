@@ -35,15 +35,15 @@ def get_connection_status(
 
     top_card = get_top_card(session)
 
-    # 1. Pending invitation?
-    if top_card.locator('button[aria-label*="Pending"]:visible').count() > 0:
-        logger.debug("Detected 'Pending' button → PENDING")
+    # 1. Pending invitation? (Scan entire page for Pending/Withdraw buttons as they move them)
+    pending_btn = session.page.locator('button:has-text("Pending"), button[aria-label*="Pending"], button[aria-label*="Withdraw"]')
+    if pending_btn.count() > 0:
+        logger.debug("Detected 'Pending'/'Withdraw' button → PENDING")
         return ProfileState.PENDING
 
     main_text = top_card.inner_text()
-    # 1b. Is there a "Pending" label?
-    if any(x in main_text for x in ["Pending"]):
-        logger.debug("Detected 'Pending' text in page → PENDING")
+    if any(x in main_text for x in ["Pending", "Withdraw"]):
+        logger.debug("Detected 'Pending'/'Withdraw' text in top card → PENDING")
         return ProfileState.PENDING
 
     # 2. Already connected?

@@ -12,6 +12,10 @@ from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from sse_starlette.sse import EventSourceResponse
+from dotenv import load_dotenv
+
+# Load environment variables early
+load_dotenv()
 import pandas as pd
 import uvicorn
 import signal
@@ -56,7 +60,6 @@ def sync_from_db_background(handle: str, force: bool = False):
     if not force and (now - last_sync_time < 300):
         return
 
-    # 🛑 2. Lock check: Prevent concurrent syncs
     # 🛑 2. Lock check: Prevent concurrent syncs
     if not sync_lock.acquire(blocking=False):
         return
@@ -161,12 +164,16 @@ app.mount("/static", StaticFiles(directory="ui/static"), name="static")
 
 async def read_stream(stream):
     """Read stdout/stderr from subprocess and pushing to broadcaster."""
+    import re
+    ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
     while True:
         line = await stream.readline()
         if line:
             text = line.decode('utf-8').strip()
+            # Strip ANSI colors for the web UI
+            clean_text = ansi_escape.sub('', text)
             print(f"[BOT] {text}")
-            await broadcaster.put(text)
+            await broadcaster.put(clean_text)
         else:
             break
 
@@ -1354,7 +1361,30 @@ async def api_screen_candidate(request: Request):
 
     # Run screening
     try:
+        await push_log(f"🚀 AI Screening started for {public_id}...")
         result = screen_candidate(profile_data, role_profile, handle)
+        await push_log(f"✅ Screening complete for {public_id}. Tier: {result.get('tier', 'N/A')}")
+        
+        # Update state in DB and Cache
+        try:
+            db_wrapper = get_db(handle)
+            session = db_wrapper.get_session()
+            try:
+                profile_row = session.query(Profile).filter(
+                    Profile.public_identifier == public_id
+                ).first()
+                if profile_row:
+                    profile_row.state = "screened"
+                    session.commit()
+            finally:
+                session.close()
+                db_wrapper.Session.remove()
+                
+            if public_id in db_profiles_map:
+                db_profiles_map[public_id]["state"] = "screened"
+        except Exception as db_e:
+            print(f"Warning: Failed to update DB state to 'screened' for {public_id}: {db_e}")
+            
         return {"status": "ok", "result": result}
     except Exception as e:
         import traceback
@@ -1449,7 +1479,29 @@ async def api_screen_batch(request: Request):
 
     # Run batch screening
     try:
+        await push_log(f"🚀 Batch AI Screening started for {len(profiles_to_screen)} candidates...")
         results = screen_batch(profiles_to_screen, role_profile, handle)
+        await push_log(f"✅ Batch screening complete. {len(results)} profiles processed.")
+
+        # Update states in DB and Cache
+        try:
+            db_wrapper = get_db(handle)
+            session = db_wrapper.get_session()
+            try:
+                for res in results:
+                    pid = res.get("public_id")
+                    if pid and pid != "unknown" and res.get("screening_status") != "error":
+                        profile_row = session.query(Profile).filter(Profile.public_identifier == pid).first()
+                        if profile_row:
+                            profile_row.state = "screened"
+                        if pid in db_profiles_map:
+                            db_profiles_map[pid]["state"] = "screened"
+                session.commit()
+            finally:
+                session.close()
+                db_wrapper.Session.remove()
+        except Exception as db_e:
+            print(f"Warning: Failed to update DB states to 'screened' for batch: {db_e}")
 
         # Summary stats
         tiers = {}

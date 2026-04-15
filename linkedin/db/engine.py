@@ -24,13 +24,15 @@ class Database:
 
     def __init__(self, db_path: str = None, force_local: bool = False):
         import os
+        from dotenv import load_dotenv
+        load_dotenv() # Force reload to ensure DATABASE_URL is visible to children
         from sqlalchemy.pool import NullPool
         
         # Check for Cloud SQL connection string first
         self.db_url = os.getenv("DATABASE_URL")
         
         if self.db_url and not force_local:
-            logger.info("Initializing remote DB (Cloud SQL)")
+            logger.info("Initializing PRIMARY remote DB (Cloud SQL) - Host: %s", self.db_url.split('@')[-1] if '@' in self.db_url else 'Remote')
             if self.db_url not in _engines:
                 # Postgres doesn't need check_same_thread.
                 # Use NullPool to ensure connections are closed immediately.
@@ -104,7 +106,7 @@ class Database:
                 conn.commit()
             if 'last_job_id' not in columns:
                 logger.info("Adding column 'last_job_id' to profiles table")
-                conn.execute(text("ALTER TABLE profiles ADD COLUMN last_job_id INTEGER"))
+                conn.execute(text("ALTER TABLE profiles ADD COLUMN last_job_id TEXT"))
                 conn.commit()
 
     def _sync_all_unsynced_profiles(self):

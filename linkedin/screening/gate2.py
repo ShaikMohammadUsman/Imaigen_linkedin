@@ -148,8 +148,8 @@ def run_gate2_scoring(resume_text: str, role_profile: dict,
     Uses call_llm() synchronously instead of async aiohttp.
     All scoring logic, weights, and tier assignment are identical.
     """
-    stage1 = role_profile.get("stage1", {})
-    stage2 = role_profile.get("stage2", {})
+    stage1 = role_profile.get("stage1") or {}
+    stage2 = role_profile.get("stage2") or {}
     role_type = stage1.get("role_type", "default")
     weights = WEIGHT_PRESETS.get(role_type, WEIGHT_PRESETS["default"])
 

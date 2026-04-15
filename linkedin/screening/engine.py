@@ -72,9 +72,9 @@ def synthesize_resume_text(profile_data: dict) -> str:
             description = pos.get("description", "")
 
             # Date range
-            dr = pos.get("date_range", {})
-            start = dr.get("start", {})
-            end = dr.get("end", {})
+            dr = pos.get("date_range") or {}
+            start = dr.get("start") or {}
+            end = dr.get("end") or {}
             start_str = f"{start.get('month', '?')}/{start.get('year', '?')}" if start else "?"
             end_str = f"{end.get('month', '?')}/{end.get('year', '?')}" if (end and end.get('year')) else "Present"
             date_str = f"{start_str} – {end_str}"
@@ -106,7 +106,7 @@ def synthesize_resume_text(profile_data: dict) -> str:
             school = edu.get("school_name", "")
             degree = edu.get("degree_name", "")
             field = edu.get("field_of_study", "")
-            dr = edu.get("date_range", {})
+            dr = edu.get("date_range") or {}
             s_year = (dr.get("start") or {}).get("year", "?")
             e_year = (dr.get("end") or {}).get("year", "?")
             line = f"- **{degree}** in {field}" if field else f"- **{degree}**"
@@ -204,14 +204,14 @@ def _calculate_experience_years(positions: list) -> float:
     today = date.today()
 
     for pos in positions:
-        dr = pos.get("date_range", {})
+        dr = pos.get("date_range") or {}
         if not dr:
             # Estimate 2 years per position without dates
             total_months += 24
             continue
 
-        start = dr.get("start", {})
-        end = dr.get("end", {})
+        start = dr.get("start") or {}
+        end = dr.get("end") or {}
 
         if not start or not start.get("year"):
             total_months += 24  # fallback
@@ -408,7 +408,8 @@ def screen_candidate(profile_data: dict, role_profile: dict, handle: str = "") -
 
     elif gate1_overall == GateStatus.PASS:
         # Step 3: Gate 1 — Hard filters (LLM)
-        hard_filters = role_profile.get("stage3", {}).get("hard_filters", [])
+        stage3 = role_profile.get("stage3") or {}
+        hard_filters = stage3.get("hard_filters", [])
         resume_text = synthesize_resume_text(profile_data)
         gate1_step2 = run_gate1_hard_filters(resume_text, hard_filters)
         gate1_overall = gate1_step2["overall_status"]

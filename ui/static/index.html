@@ -60,6 +60,9 @@
         }
     </script>
     <style>
+        html {
+            scroll-behavior: smooth;
+        }
         body {
             background-color: #FFFBF7;
             color: #1F2937;
@@ -133,6 +136,10 @@
         * {
             scrollbar-width: thin;
             scrollbar-color: #475569 #E2E8F0;
+        }
+
+        .custom-scrollbar {
+            scroll-behavior: smooth;
         }
 
         .custom-scrollbar::-webkit-scrollbar {
@@ -1163,6 +1170,13 @@
                     <div
                         class="flex flex-wrap items-center gap-3 bg-white p-2 rounded-2xl border border-gray-100 shadow-sm">
                         <div class="px-3 py-1 bg-gray-50 rounded-lg flex items-center gap-2 border border-gray-100">
+                            <i class="fa-solid fa-wand-magic-sparkles text-scooter-orange text-[10px]"></i>
+                            <select id="filter-ai-profile" onchange="filterResults()"
+                                class="bg-transparent border-none text-[11px] font-bold text-gray-600 outline-none cursor-pointer">
+                                <option value="all">AI Profile: All</option>
+                            </select>
+                        </div>
+                        <div class="px-3 py-1 bg-gray-50 rounded-lg flex items-center gap-2 border border-gray-100">
                             <i class="fa-solid fa-filter text-gray-400 text-[10px]"></i>
                             <select id="filter-role" onchange="filterResults()"
                                 class="bg-transparent border-none text-[11px] font-bold text-gray-600 outline-none cursor-pointer">
@@ -1190,6 +1204,15 @@
                                 <option value="CONNECTED">Connected</option>
                                 <option value="COMPLETED">Completed</option>
                                 <option value="FAILED">Failed</option>
+                            </select>
+                        </div>
+                        <div class="px-3 py-1 bg-gray-50 rounded-lg flex items-center gap-2 border border-gray-100">
+                            <i class="fa-solid fa-robot text-gray-400 text-[10px]"></i>
+                            <select id="filter-screened" onchange="filterResults()"
+                                class="bg-transparent border-none text-[11px] font-bold text-gray-600 outline-none cursor-pointer">
+                                <option value="all">All Screening</option>
+                                <option value="screened">Screened Candidates</option>
+                                <option value="unscreened">Unscreened</option>
                             </select>
                         </div>
                         <button onclick="downloadFilteredResults()"
@@ -2227,14 +2250,33 @@
                         badge.classList.toggle('hidden', allPoolData.length === 0);
                     }
 
+                    // AI Profile filter
+                    const aiProfileSelect = document.getElementById('filter-ai-profile');
+                    if (aiProfileSelect) {
+                        if (!window.screeningProfiles || window.screeningProfiles.length === 0) await fetchScreeningProfiles();
+                        const currentAiRole = aiProfileSelect.value;
+                        aiProfileSelect.innerHTML = '<option value="all">AI Profile: All</option>' +
+                            (window.screeningProfiles || []).map(p => `<option value="${p.role_id}">${p.role_title}</option>`).join('');
+                        
+                        if (currentAiRole !== 'all' && (window.screeningProfiles || []).some(p => p.role_id === currentAiRole)) {
+                            aiProfileSelect.value = currentAiRole;
+                        }
+                    }
+
                     // Role filter
                     const roleSelect = document.getElementById('filter-role');
                     if (roleSelect) {
+                        const currentRole = roleSelect.value;
                         const roles = [...new Set(allPoolData.map(r => r.Role))].filter(Boolean);
-                        roleSelect.innerHTML = '<option value="all">All Roles</option>' +
+                        roleSelect.innerHTML = '<option value="all">Original: All</option>' +
                             roles.map(r => `<option value="${r}">${r}</option>`).join('');
+                        
+                        // Restore selection if it still exists
+                        if (currentRole !== 'all' && roles.includes(currentRole)) {
+                            roleSelect.value = currentRole;
+                        }
                     }
-                    renderResultsTable(allPoolData);
+                    filterResults();
                 } catch (e) {
                     console.error(e);
                     tbody.innerHTML = '<tr><td colspan="7" class="p-10 text-center text-red-400">Error loading data.</td></tr>';
@@ -2242,18 +2284,36 @@
             }
 
             function filterResults() {
+                const aiProfile = document.getElementById('filter-ai-profile') ? document.getElementById('filter-ai-profile').value : 'all';
                 const role = document.getElementById('filter-role').value;
                 const status = document.getElementById('filter-status').value;
                 const source = document.getElementById('filter-source').value;
+                const screened = document.getElementById('filter-screened') ? document.getElementById('filter-screened').value : 'all';
+                
                 const filtered = allPoolData.filter(row => {
                     const r = String(row.Role || "").trim();
                     const s = String(row.Status || "").trim();
                     const src = String(row.Source || "").trim();
 
+                    let scrMatch = true;
+                    if (screened !== 'all') {
+                        const screening = (window.screeningResults || []).find(sr => 
+                            (sr.public_id === row.public_id || 
+                             sr.public_id === row.public_identifier ||
+                             sr.url === (row.URL || row['LinkedIn URL'])) &&
+                            (aiProfile === 'all' || sr.role_id === aiProfile)
+                        );
+                        if (screened === 'screened') {
+                            scrMatch = !!screening;
+                        } else if (screened === 'unscreened') {
+                            scrMatch = !screening;
+                        }
+                    }
+
                     const rMatch = role === 'all' || r === role;
                     const sMatch = status === 'all' || s === status;
                     const srcMatch = source === 'all' || src === source;
-                    return rMatch && sMatch && srcMatch;
+                    return rMatch && sMatch && srcMatch && scrMatch;
                 });
                 renderResultsTable(filtered);
             }
@@ -2324,7 +2384,8 @@
                             <p class="text-sm font-bold text-scooter-green mb-3">${row.Headline}</p>
                              <div class="flex flex-wrap gap-2">
                                 <span class="bg-white border border-gray-200 px-3 py-1 rounded-full text-[10px] font-black tracking-widest uppercase text-gray-500 shadow-sm"><i class="fa-solid fa-location-dot mr-1"></i> ${locationDisplay}</span>
-                                <a href="${row.URL}" target="_blank" class="bg-white border border-gray-200 px-3 py-1 rounded-full text-[10px] font-black tracking-widest uppercase text-blue-500 shadow-sm hover:bg-blue-50 hover:border-blue-200 transition-colors"><i class="fa-brands fa-linkedin mr-1"></i> Profile Link</a>
+                                <a href="${row.URL || row['LinkedIn URL']}" target="_blank" class="bg-white border border-gray-200 px-3 py-1 rounded-full text-[10px] font-black tracking-widest uppercase text-blue-500 shadow-sm hover:bg-blue-50 hover:border-blue-200 transition-colors"><i class="fa-brands fa-linkedin mr-1"></i> Profile Link</a>
+                                <button onclick="screenCandidate('${row.URL || row['LinkedIn URL']}')" class="bg-scooter-orange border border-scooter-orange/50 px-3 py-1 rounded-full text-[10px] font-black tracking-widest uppercase text-white shadow-sm hover:bg-scooter-orange/90 transition-colors"><i class="fa-solid fa-robot mr-1"></i> Screen Candidate</button>
                             </div>
                         </div>
                     </div>
@@ -2346,12 +2407,21 @@
                                 <div class="bg-gray-900 rounded-3xl p-6 text-white shadow-xl relative overflow-hidden">
                                     <div class="absolute -top-10 -right-10 w-40 h-40 bg-gradient-to-br from-scooter-orange to-red-500 rounded-full opacity-10 blur-2xl"></div>
                                     ${(() => {
-                                        const screening = (window.screeningResults || []).find(sr => 
+                                        const aiProfileId = document.getElementById('filter-ai-profile')?.value || 'all';
+                                        const cResults = (window.screeningResults || []).filter(sr => 
                                             sr.public_id === row.public_id || 
                                             sr.public_id === row.public_identifier ||
                                             sr.url === (row.URL || row['LinkedIn URL'])
                                         );
-                                        if (!screening) return `<div class="text-gray-500 text-xs italic py-4">No AI screening data found for this candidate. Run screening to see insights.</div>`;
+
+                                        let screening = null;
+                                        if (aiProfileId !== 'all') {
+                                            screening = cResults.find(sr => sr.role_id === aiProfileId);
+                                        } else if (cResults.length > 0) {
+                                            screening = cResults.sort((a, b) => new Date(b.screened_at || 0) - new Date(a.screened_at || 0))[0];
+                                        }
+
+                                        if (!screening) return `<div class="text-gray-500 text-xs italic py-4">No AI screening data found${aiProfileId !== 'all' ? ' for the selected profile' : ''}. Run screening to see insights.</div>`;
                                         
                                         const g1 = screening.gate1_result || {};
                                         const g2 = screening.gate2_result || {};
@@ -2367,15 +2437,25 @@
                                                     fails.push(`<div class="text-red-400 mb-1 flex gap-2"><i class="fa-solid fa-circle-xmark mt-1"></i> <span><b>${k.toUpperCase()}:</b> ${step1.checks[k]?.reason || 'Failed structured check'}</span></div>`);
                                                 });
                                             }
+                                            if (step1.unclear_items && step1.unclear_items.length > 0) {
+                                                step1.unclear_items.forEach(k => {
+                                                    fails.push(`<div class="text-orange-400 mb-1 flex gap-2"><i class="fa-solid fa-circle-exclamation mt-1"></i> <span><b>${k.toUpperCase()} (NEEDS REVIEW):</b> ${step1.checks[k]?.reason || 'Unclear structured check'}</span></div>`);
+                                                });
+                                            }
                                             if (step2.failed_items && step2.failed_items.length > 0) {
                                                 step2.filter_results.filter(fr => fr.result === 'NO').forEach(fr => {
                                                     fails.push(`<div class="text-red-400 mb-1 flex gap-2"><i class="fa-solid fa-filter mt-1"></i> <span><b>Filter:</b> ${fr.reason}</span></div>`);
                                                 });
                                             }
+                                            if (step2.unclear_items && step2.unclear_items.length > 0) {
+                                                step2.filter_results.filter(fr => fr.result === 'UNCLEAR').forEach(fr => {
+                                                    fails.push(`<div class="text-orange-400 mb-1 flex gap-2"><i class="fa-solid fa-circle-exclamation mt-1"></i> <span><b>Filter (NEEDS REVIEW):</b> ${fr.reason}</span></div>`);
+                                                });
+                                            }
                                             
                                             g1Html = `
                                                 <div class="mb-4">
-                                                    <div class="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-3">Gate 1 Failures</div>
+                                                    <div class="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-3">Gate 1 Issues</div>
                                                     <div class="space-y-2 text-[11px]">
                                                         ${fails.join('') || '<div class="text-green-400 flex gap-2"><i class="fa-solid fa-circle-check"></i> Passed Gate 1</div>'}
                                                     </div>
@@ -2384,15 +2464,24 @@
                                         }
 
                                         let tierColor = 'text-gray-400';
-                                        if (screening.tier === 'SHORTLIST') tierColor = 'text-green-400';
-                                        else if (screening.tier === 'REVIEW') tierColor = 'text-orange-400';
-                                        else if (screening.tier === 'PASS') tierColor = 'text-red-400';
+                                        let displayStatus = 'N/A';
+
+                                        if (screening.screening_status === 'gate1_failed' || screening.tier === 'PASS' || screening.tier === 'FAIL') {
+                                            displayStatus = 'Failed';
+                                            tierColor = 'text-red-400';
+                                        } else if (screening.screening_status === 'gate1_needs_review' || screening.tier === 'REVIEW') {
+                                            displayStatus = 'Review Needed';
+                                            tierColor = 'text-orange-400';
+                                        } else if (screening.tier === 'SHORTLIST' || screening.screening_status === 'gate2_complete' || screening.screening_status === 'gate2_pending') {
+                                            displayStatus = 'Pass';
+                                            tierColor = 'text-green-400';
+                                        }
 
                                         return `
                                             <div class="flex items-center justify-between mb-6 border-b border-white/5 pb-4">
                                                 <div>
                                                     <div class="text-[10px] font-black text-scooter-orange uppercase tracking-widest">AI Tier Score</div>
-                                                    <div class="text-2xl font-black ${tierColor}">${screening.tier || 'N/A'}</div>
+                                                    <div class="text-2xl font-black ${tierColor}">${displayStatus}</div>
                                                 </div>
                                                 <div class="text-right">
                                                     <div class="text-[10px] font-black text-gray-500 uppercase tracking-widest">Suitability Fit</div>
@@ -2405,8 +2494,31 @@
                                             ${screening.tier ? `
                                             <div>
                                                 <div class="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-3">Gate 2 Logic (LLM Context)</div>
-                                                <div class="text-xs text-gray-200 leading-relaxed italic bg-white/5 p-4 rounded-2xl border border-white/5">
-                                                    "${g2.analysis_summary || 'Analysis data unavailable.'}"
+                                                <div class="space-y-3">
+                                                    ${g2.dimensions && g2.dimensions.sales_motion_match ? `
+                                                    <div class="bg-white/5 p-3 rounded-xl border border-white/5">
+                                                        <div class="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Sales Motion Match (${g2.dimensions.sales_motion_match.score}/100)</div>
+                                                        <div class="text-xs text-gray-200 leading-relaxed italic">${g2.dimensions.sales_motion_match.reasoning}</div>
+                                                    </div>` : ''}
+                                                    ${g2.dimensions && g2.dimensions.buyer_persona_proximity ? `
+                                                    <div class="bg-white/5 p-3 rounded-xl border border-white/5">
+                                                        <div class="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Buyer Persona (${g2.dimensions.buyer_persona_proximity.score}/100)</div>
+                                                        <div class="text-xs text-gray-200 leading-relaxed italic">${g2.dimensions.buyer_persona_proximity.reasoning}</div>
+                                                    </div>` : ''}
+                                                    ${g2.dimensions && g2.dimensions.industry_relevance ? `
+                                                    <div class="bg-white/5 p-3 rounded-xl border border-white/5">
+                                                        <div class="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Industry Relevance (${g2.dimensions.industry_relevance.score}/100)</div>
+                                                        <div class="text-xs text-gray-200 leading-relaxed italic">${g2.dimensions.industry_relevance.reasoning}</div>
+                                                    </div>` : ''}
+                                                    ${g2.dimensions && g2.dimensions.seniority_calibration ? `
+                                                    <div class="bg-white/5 p-3 rounded-xl border border-white/5">
+                                                        <div class="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Seniority Calibration (${g2.dimensions.seniority_calibration.score}/100)</div>
+                                                        <div class="text-xs text-gray-200 leading-relaxed italic">${g2.dimensions.seniority_calibration.reasoning}</div>
+                                                    </div>` : ''}
+                                                    ${(!g2.dimensions || Object.keys(g2.dimensions).length === 0) ? `
+                                                    <div class="text-xs text-gray-200 leading-relaxed italic bg-white/5 p-4 rounded-2xl border border-white/5">
+                                                        Analysis data unavailable.
+                                                    </div>` : ''}
                                                 </div>
                                             </div>
                                             ` : ''}
@@ -2503,6 +2615,18 @@
             function renderResultsTable(data) {
                 const tbody = document.getElementById('results-table-body');
                 if (!tbody) return;
+
+                // Optimization: Skip re-rendering if data is identical to avoid scroll jumps and flicker
+                const stateString = JSON.stringify(data.map(r => ({
+                    u: r.URL || r['LinkedIn URL'], 
+                    s: r.Status, 
+                    sc: r.fit_score || '',
+                    ss: r.screening_status || ''
+                })));
+                
+                if (tbody.getAttribute('data-last-rendered') === stateString) return;
+                tbody.setAttribute('data-last-rendered', stateString);
+
                 tbody.innerHTML = '';
 
                 if (data.length === 0) {
@@ -2518,6 +2642,7 @@
                     else if (s === 'PENDING') statusClass = 'bg-yellow-100 text-yellow-700 border-yellow-200';
                     else if (s === 'ENRICHED') statusClass = 'bg-orange-100 text-orange-600 border-orange-200';
                     else if (s === 'FAILED') statusClass = 'bg-red-100 text-red-700 border-red-200';
+                    else if (s === 'SCREENED') statusClass = 'bg-fuchsia-100 text-fuchsia-700 border-fuchsia-200';
                     else if (s === 'HARVESTED') statusClass = 'bg-gray-100 text-gray-600 border-gray-300';
 
                     // Source color
@@ -2616,12 +2741,19 @@
                             </td>
                             <td class="p-4 w-[12%] text-center border-l border-gray-50">
                                 ${(() => {
-                                    // Try to match screening result by public_id or url
-                                    const screening = (window.screeningResults || []).find(sr => 
+                                    const aiProfileId = document.getElementById('filter-ai-profile')?.value || 'all';
+                                    const cResults = (window.screeningResults || []).filter(sr => 
                                         sr.public_id === row.public_id || 
                                         sr.public_id === row.public_identifier ||
                                         sr.url === (row.URL || row['LinkedIn URL'])
                                     );
+
+                                    let screening = null;
+                                    if (aiProfileId !== 'all') {
+                                        screening = cResults.find(sr => sr.role_id === aiProfileId);
+                                    } else if (cResults.length > 0) {
+                                        screening = cResults.sort((a, b) => new Date(b.screened_at || 0) - new Date(a.screened_at || 0))[0];
+                                    }
                                     
                                     if (!screening) return `<span class="text-[9px] text-gray-300 font-bold uppercase tracking-tighter italic">Not Screened</span>`;
                                     
@@ -2674,16 +2806,31 @@
                 const role = document.getElementById('filter-role').value;
                 const status = document.getElementById('filter-status').value;
                 const source = document.getElementById('filter-source').value;
+                const screened = document.getElementById('filter-screened') ? document.getElementById('filter-screened').value : 'all';
 
                 const filtered = allPoolData.filter(row => {
                     const r = String(row.Role || "").trim();
                     const s = String(row.Status || "").trim();
                     const src = String(row.Source || "").trim();
 
+                    let scrMatch = true;
+                    if (screened !== 'all') {
+                        const screening = (window.screeningResults || []).find(sr => 
+                            sr.public_id === row.public_id || 
+                            sr.public_id === row.public_identifier ||
+                            sr.url === (row.URL || row['LinkedIn URL'])
+                        );
+                        if (screened === 'screened') {
+                            scrMatch = !!screening;
+                        } else if (screened === 'unscreened') {
+                            scrMatch = !screening;
+                        }
+                    }
+
                     const rMatch = role === 'all' || r === role;
                     const sMatch = status === 'all' || s === status;
                     const srcMatch = source === 'all' || src === source;
-                    return rMatch && sMatch && srcMatch;
+                    return rMatch && sMatch && srcMatch && scrMatch;
                 });
 
                 if (filtered.length === 0) {
@@ -3052,6 +3199,15 @@
                 const tbody = document.getElementById('queue-table-body');
                 const countEl = document.getElementById('queue-count');
                 if (!tbody) return;
+
+                const dataStr = JSON.stringify(data);
+                if (window.lastRenderedQueueStr === dataStr) {
+                    // Re-apply filter just in case, but skip DOM rebuild to keep scroll/smoothness
+                    filterQueueTable();
+                    return;
+                }
+                window.lastRenderedQueueStr = dataStr;
+
                 tbody.innerHTML = '';
                 if (countEl) countEl.textContent = `${data.length} candidates pending`;
 
@@ -3060,6 +3216,7 @@
                     return;
                 }
 
+                const fragment = document.createDocumentFragment();
                 data.forEach((item, idx) => {
                     const tr = document.createElement('tr');
                     tr.className = "hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-0 queue-row";
@@ -3101,8 +3258,10 @@
                                 </button>
                             </td>
                         `;
-                    tbody.appendChild(tr);
+                    fragment.appendChild(tr);
                 });
+                tbody.appendChild(fragment);
+                filterQueueTable(); // Re-apply existing filter instantly
             }
 
             function filterQueueTable() {
@@ -3290,53 +3449,100 @@
                 }
             }
 
+            async function openScreeningSelectionModal(callback) {
+                if (!window.screeningProfiles || window.screeningProfiles.length === 0) await fetchScreeningProfiles();
+                
+                const container = document.getElementById('screening-selection-body');
+                container.innerHTML = '';
+                
+                if (!window.screeningProfiles || window.screeningProfiles.length === 0) {
+                    container.innerHTML = '<div class="text-center py-10 text-gray-400 italic">No completed screening profiles found. Create one in the Screening Engine tab first.</div>';
+                } else {
+                    window.screeningProfiles.forEach(p => {
+                        const item = document.createElement('div');
+                        item.className = "p-4 rounded-3xl border border-gray-100 hover:border-scooter-orange/30 hover:bg-orange-50/10 cursor-pointer transition-all flex items-center justify-between group";
+                        item.onclick = () => {
+                            closeScreeningSelectionModal();
+                            callback(p.role_id);
+                        };
+                        item.innerHTML = `
+                            <div>
+                                <div class="font-bold text-gray-900 text-sm group-hover:text-scooter-orange transition-colors">${p.role_title}</div>
+                                <div class="text-[10px] text-gray-400 font-black uppercase tracking-widest mt-0.5">${p.company_name || 'Generic'}</div>
+                            </div>
+                            <div class="w-8 h-8 rounded-xl bg-gray-50 flex items-center justify-center text-gray-300 group-hover:bg-scooter-orange group-hover:text-white transition-all shadow-sm">
+                                <i class="fa-solid fa-chevron-right text-[10px]"></i>
+                            </div>
+                        `;
+                        container.appendChild(item);
+                    });
+                }
+                
+                document.getElementById('screening-selection-modal').classList.remove('hidden');
+                document.getElementById('screening-selection-modal').classList.add('flex');
+            }
+
+            function closeScreeningSelectionModal() {
+                const modal = document.getElementById('screening-selection-modal');
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }
+
             async function screenCandidate(url) {
                 const handle = document.getElementById('handle-input').value;
                 if (!handle) return alert("Please select an account handle first.");
                 
-                if (!window.screeningProfiles || window.screeningProfiles.length === 0) await fetchScreeningProfiles();
-                
-                const candidate = allPoolData.find(r => (r.URL === url || r['LinkedIn URL'] === url));
+                let candidate = allPoolData.find(r => (r.URL === url || r['LinkedIn URL'] === url));
+                if (!candidate) candidate = currentResults.find(r => (r.URL === url || r['LinkedIn URL'] === url));
                 if (!candidate) return alert("Candidate data not found.");
 
-                let roleProfile = null;
-                if (window.screeningProfiles.length === 1) {
-                    roleProfile = window.screeningProfiles[0];
-                } else if (window.screeningProfiles.length > 1) {
-                    const options = window.screeningProfiles.map((p, i) => `${i + 1}. ${p.stage1.role_title}`).join('\n');
-                    const choice = prompt(`Select Role Profile for screening:\n\n${options}`, "1");
-                    if (!choice) return;
-                    roleProfile = window.screeningProfiles[parseInt(choice) - 1];
-                }
-
-                if (!roleProfile) return alert("No valid role profile selected. Create/complete one in the screening tab.");
-
-                if (!confirm(`Run AI Screening for ${candidate['Full Name']} against "${roleProfile.role_title}"?`)) return;
-
-                setStatus("Screening Candidate...", "bg-scooter-orange");
-                try {
-                    const res = await fetch('/api/screen_candidate', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            handle,
-                            public_id: candidate.public_id || candidate.public_identifier,
-                            role_id: roleProfile.role_id
-                        })
-                    });
-                    const data = await res.json();
-                    if (res.ok) {
-                        const result = data.result;
-                        alert(`Screening complete!\nFit Score: ${result.fit_score}%\nTier: ${result.tier}`);
-                        await fetchScreeningResults();
-                        renderResultsTable(allPoolData);
-                    } else {
-                        alert("Screening failed: " + (data.message || "Unknown error"));
+                let publicId = candidate.public_id || candidate.public_identifier;
+                if (!publicId) {
+                    const u = candidate.URL || candidate['LinkedIn URL'];
+                    if (u && u.includes('/in/')) {
+                         publicId = u.split('/in/')[1].replace(/\/$/, '').split('?')[0];
                     }
-                } catch (e) { console.error(e); }
-                finally {
-                    setStatus("System Idle", "bg-gray-300");
                 }
+
+                if (!publicId) return alert("Error: Candidate public ID not found!");
+
+                openScreeningSelectionModal(async (roleId) => {
+                    const roleProfile = window.screeningProfiles.find(p => p.role_id === roleId);
+                    const titleName = roleProfile ? (roleProfile.stage1?.role_title || roleProfile.role_title) : 'Role';
+
+                    if (!confirm(`Run AI Screening for ${candidate['Full Name']} against "${titleName}"?`)) return;
+
+                    console.log(`[UI] Requesting screening for ${publicId} against ${roleId}...`);
+                    setStatus("Screening Candidate...", "bg-scooter-orange");
+                    try {
+                        const res = await fetch('/api/screen_candidate', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                handle,
+                                public_id: publicId,
+                                role_id: roleId
+                            })
+                        });
+                        const data = await res.json();
+                        if (res.ok) {
+                            const result = data.result || data;
+                            console.log("[UI] Screening complete:", result);
+                            alert(`Screening complete!\nFit Score: ${result.fit_score !== null ? result.fit_score : 'N/A'}%\nTier: ${result.tier || result.screening_status}`);
+                            await fetchScreeningResults();
+                            filterResults(); // Re-render table locally
+                        } else {
+                            console.error("[UI] Screening failed:", data);
+                            alert("Screening failed: " + (data.message || "Unknown error"));
+                        }
+                    } catch (e) { 
+                        console.error("[UI] Error in screening callback:", e); 
+                        alert("An error occurred during screening. Check console.");
+                    }
+                    finally {
+                        setStatus("System Idle", "bg-gray-300");
+                    }
+                });
             }
 
             async function screenSelected() {
@@ -3347,46 +3553,42 @@
                     .filter(cb => cb.checked).map(cb => cb.value);
                 if (selectedUrls.length === 0) return alert("No candidates selected.");
 
-                if (!window.screeningProfiles || window.screeningProfiles.length === 0) await fetchScreeningProfiles();
-                if (window.screeningProfiles.length === 0) return alert("No completed role profiles found. Create one first.");
+                openScreeningSelectionModal(async (roleId) => {
+                    const roleProfile = window.screeningProfiles.find(p => p.role_id === roleId);
+                    const titleName = roleProfile ? (roleProfile.stage1?.role_title || roleProfile.role_title) : 'Role';
 
-                let roleProfile = null;
-                if (window.screeningProfiles.length === 1) {
-                    roleProfile = window.screeningProfiles[0];
-                } else {
-                    const options = window.screeningProfiles.map((p, i) => `${i+1}. ${p.role_title}`).join('\n');
-                    const choice = prompt(`Select Role Profile to screen against:\n\n${options}`, "1");
-                    if (!choice) return;
-                    roleProfile = window.screeningProfiles[parseInt(choice) - 1];
-                }
-                
-                if (!roleProfile) return;
+                    if (!confirm(`🚀 Run Batch AI Screening for ${selectedUrls.length} candidates against "${titleName}"?`)) return;
 
-                if (!confirm(`🚀 Run Batch AI Screening for ${selectedUrls.length} candidates? This will use LLM tokens.`)) return;
-
-                setStatus("Batch Screening Active...", "bg-scooter-orange");
-                try {
-                    const res = await fetch('/api/screen_batch', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            handle,
-                            role_id: roleProfile.role_id,
-                            urls: selectedUrls
-                        })
-                    });
-                    const data = await res.json();
-                    if (res.ok) {
-                        alert(`Batch screening complete!\nTotal screened: ${data.total_screened}`);
-                        await fetchScreeningResults();
-                        renderResultsTable(allPoolData);
-                    } else {
-                        alert("Error: " + (data.message || "Screening failed"));
+                    console.log(`[UI] Requesting batch screening for ${selectedUrls.length} URLs against ${roleId}...`);
+                    setStatus("Batch Screening Active...", "bg-scooter-orange");
+                    try {
+                        const res = await fetch('/api/screen_batch', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                handle,
+                                role_id: roleId,
+                                urls: selectedUrls
+                            })
+                        });
+                        const data = await res.json();
+                        if (res.ok) {
+                            console.log("[UI] Batch screening complete:", data);
+                            alert(`Batch screening complete!\nTotal screened: ${data.total_screened}`);
+                            await fetchScreeningResults();
+                            filterResults(); // Re-render table locally
+                        } else {
+                            console.error("[UI] Batch screening failed:", data);
+                            alert("Error: " + (data.message || "Screening failed"));
+                        }
+                    } catch (e) { 
+                        console.error("[UI] Error in batch screening callback:", e); 
+                        alert("An error occurred during batch screening. Check console.");
                     }
-                } catch (e) { console.error(e); }
-                finally {
-                    setStatus("System Idle", "bg-gray-300");
-                }
+                    finally {
+                        setStatus("System Idle", "bg-gray-300");
+                    }
+                });
             }
 
             // --- SCREENING ENGINE LOGIC ---
@@ -3685,6 +3887,81 @@
                 setInterval(() => loadQueue(true), 15000);
                 setInterval(() => loadResults(true), 15000);
             });
+
+            // --- CUSTOM PLATFORM NOTIFICATIONS (TOASTS) ---
+            function showToast(message, type = 'info') {
+                let container = document.getElementById('toast-container');
+                if (!container) {
+                    container = document.createElement('div');
+                    container.id = 'toast-container';
+                    container.className = 'fixed top-6 right-6 z-[9999] flex flex-col gap-3 pointer-events-none';
+                    document.body.appendChild(container);
+                }
+
+                const toast = document.createElement('div');
+                toast.className = 'pointer-events-auto flex items-start gap-3 p-4 rounded-2xl min-w-[300px] max-w-sm transform transition-all duration-500 translate-x-full opacity-0 shadow-2xl';
+                
+                let iconHtml = '';
+                let bgClasses = 'bg-white border-l-4 border-blue-500 text-gray-800';
+                
+                const lowerMsg = String(message).toLowerCase();
+                
+                if (type === 'success' || message.includes('✅') || lowerMsg.includes('success') || lowerMsg.includes('complete') || lowerMsg.includes('started')) {
+                    bgClasses = 'bg-white border-l-4 border-scooter-green text-gray-800';
+                    iconHtml = '<i class="fa-solid fa-circle-check text-scooter-green text-lg mt-0.5"></i>';
+                } else if (type === 'error' || message.includes('❌') || message.includes('⚠️') || lowerMsg.includes('error') || lowerMsg.includes('fail')) {
+                    bgClasses = 'bg-white border-l-4 border-red-500 text-gray-800';
+                    iconHtml = '<i class="fa-solid fa-circle-xmark text-red-500 text-lg mt-0.5"></i>';
+                } else if (type === 'warning' || message.includes('?')) {
+                    bgClasses = 'bg-white border-l-4 border-scooter-orange text-gray-800';
+                    iconHtml = '<i class="fa-solid fa-triangle-exclamation text-scooter-orange text-lg mt-0.5"></i>';
+                } else {
+                    bgClasses = 'bg-white border-l-4 border-blue-500 text-gray-800';
+                    iconHtml = '<i class="fa-solid fa-circle-info text-blue-500 text-lg mt-0.5"></i>';
+                }
+
+                toast.className += ' ' + bgClasses;
+
+                toast.innerHTML = `
+                    <div class="shrink-0 flex items-center justify-center">${iconHtml}</div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm font-bold leading-snug whitespace-pre-wrap text-gray-700 break-words">${message}</p>
+                    </div>
+                    <button onclick="
+                        this.parentElement.classList.remove('translate-x-0', 'opacity-100');
+                        this.parentElement.classList.add('translate-x-full', 'opacity-0');
+                        setTimeout(() => this.parentElement.remove(), 500);
+                    " class="text-gray-400 hover:text-gray-600 transition-colors shrink-0 ml-2">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                `;
+
+                container.appendChild(toast);
+
+                // Animate in
+                requestAnimationFrame(() => {
+                    requestAnimationFrame(() => {
+                        toast.classList.remove('translate-x-full', 'opacity-0');
+                        toast.classList.add('translate-x-0', 'opacity-100');
+                    });
+                });
+
+                // Auto remove after 5 seconds
+                setTimeout(() => {
+                    if (toast.parentElement) {
+                        toast.classList.remove('translate-x-0', 'opacity-100');
+                        toast.classList.add('translate-x-full', 'opacity-0');
+                        setTimeout(() => {
+                            if (toast.parentElement) toast.remove();
+                        }, 500);
+                    }
+                }, 5000);
+            }
+
+            // Override original window.alert
+            window.alert = function(message) {
+                showToast(message);
+            };
         </script>
         <!-- Candidate Details Modal -->
         <div id="details-modal"
@@ -3753,6 +4030,26 @@
                     <button onclick="closeConversationModal()"
                         class="px-8 py-3 rounded-2xl bg-gray-900 text-white text-xs font-black uppercase tracking-widest hover:bg-black transition-all">Close
                         History</button>
+                </div>
+            </div>
+        </div>
+        <!-- Screening Profile Selection Modal -->
+        <div id="screening-selection-modal" class="fixed inset-0 bg-gray-900/60 backdrop-blur-md hidden items-center justify-center z-[120] p-4 animate-in fade-in duration-300">
+            <div class="bg-white rounded-[40px] shadow-2xl w-full max-w-lg overflow-hidden flex flex-col border border-white translate-y-0 animate-in slide-in-from-bottom-8 duration-500">
+                <div class="flex items-center justify-between p-8 border-b border-gray-100 bg-white/50 backdrop-blur-sm sticky top-0 z-10">
+                    <div class="flex items-center gap-3">
+                        <div class="w-1.5 h-6 bg-scooter-orange rounded-full"></div>
+                        <h3 class="text-xl font-black text-gray-900 tracking-tight">Select Screening Profile</h3>
+                    </div>
+                    <button onclick="closeScreeningSelectionModal()" class="w-10 h-10 rounded-full bg-gray-50 hover:bg-gray-100 text-gray-400 hover:text-gray-900 flex items-center justify-center transition-all group shrink-0">
+                        <i class="fa-solid fa-xmark group-hover:rotate-90 transition-transform"></i>
+                    </button>
+                </div>
+                <div id="screening-selection-body" class="p-8 space-y-4 max-h-[60vh] overflow-y-auto custom-scrollbar">
+                    <!-- Profiles will be listed here -->
+                </div>
+                <div class="p-6 bg-white border-t border-gray-100 flex justify-end gap-3 rounded-b-[40px]">
+                    <button onclick="closeScreeningSelectionModal()" class="px-8 py-3 rounded-2xl bg-gray-100 text-gray-500 text-xs font-black uppercase tracking-widest hover:bg-gray-200 transition-all">Cancel</button>
                 </div>
             </div>
         </div>

@@ -1,14 +1,23 @@
 # linkedin/navigation/login.py
 import logging
+import sys
 from pathlib import Path
+
+# Force UTF-8 for Windows consoles that default to cp1252
+if hasattr(sys.stdout, 'reconfigure'):
+    sys.stdout.reconfigure(encoding='utf-8')
+if hasattr(sys.stderr, 'reconfigure'):
+    sys.stderr.reconfigure(encoding='utf-8')
 
 from playwright.sync_api import sync_playwright
 from playwright_stealth import Stealth
 from termcolor import colored
 
-from linkedin.conf import get_account_config
+from linkedin.conf import get_account_config, ASSETS_DIR
 from linkedin.navigation.utils import goto_page
 from linkedin.sessions.registry import get_session
+
+import time
 
 logger = logging.getLogger(__name__)
 

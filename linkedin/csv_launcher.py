@@ -5,6 +5,7 @@ from typing import Optional
 
 import pandas as pd
 
+from termcolor import colored
 from linkedin.campaigns.engine import start_campaign
 from linkedin.conf import get_first_active_account
 from linkedin.db.profiles import get_updated_at_df
@@ -132,6 +133,10 @@ def launch_connect_follow_up_campaign(
     )
 
     input_csv = session.config['input_csv']
+    logger.info(f"🚀 [INIT] Outreach started for @{handle}")
+    logger.info(f"📂 Mode: {'Enrichment only' if enrich_only else 'Full Outreach'} | Limit: {limit}")
+    import sys
+    sys.stdout.flush()
     logger.info(f"Launching campaign → running as @{handle} | CSV: {input_csv} | Enrich Mode: {enrich_only} | Limit: {limit} | Note: {'Provided' if note else 'None'}")
 
     profiles_df = load_profiles_df(input_csv)
@@ -139,15 +144,44 @@ def launch_connect_follow_up_campaign(
     if urls:
         # Filter profiles to only include the selected URLs
         from urllib.parse import urlparse
-        def norm(u): 
+        def norm(u):
+            if not u: return ""
             try:
+                # 1. Clean up spacing and lower
+                u = str(u).strip().lower()
+                # 2. Parse URL
                 p = urlparse(u)
-                return f"{p.scheme}://{p.netloc}{p.path}".rstrip("/")
-            except: return u
+                # 3. Handle relative URLs by adding dummy domain if needed
+                if not p.netloc:
+                    p = urlparse(f"https://www.linkedin.com/in/{u.strip('/')}")
+                
+                # 4. Remove www. and trailing slashes for uniform matching
+                netloc = p.netloc.replace("www.", "")
+                path = p.path.rstrip("/")
+                return f"{netloc}{path}"
+            except:
+                return str(u).strip().lower().rstrip("/")
         
         norm_targets = {norm(u) for u in urls}
-        profiles_df = profiles_df[profiles_df.apply(lambda row: any(norm(row[col]) in norm_targets for col in profiles_df.columns if 'url' in col.lower()), axis=1)]
-        logger.info(f"Filtered to {len(profiles_df)} selected candidates.")
+        logger.debug(f"Target Norms: {norm_targets}")
+        
+        def match_row(row):
+            for col in profiles_df.columns:
+                if 'url' in col.lower():
+                    val = row[col]
+                    if val and norm(val) in norm_targets:
+                        return True
+            return False
+
+        original_count = len(profiles_df)
+        profiles_df = profiles_df[profiles_df.apply(match_row, axis=1)]
+        logger.info(colored(f"🎯 Filtered to {len(profiles_df)} selected candidates (out of {original_count} in CSV).", "green"))
+        
+        if len(profiles_df) == 0:
+            logger.warning(colored("⚠️ No matching profiles found in CSV for the selected URLs!", "yellow", attrs=["bold"]))
+            logger.info(f"CSV Columns: {list(profiles_df.columns)}")
+            logger.info(f"Requested URLs (first 2): {urls[:2]}")
+            sys.stdout.flush()
 
     profiles = sort_profiles(session, profiles_df)
     
@@ -159,21 +193,22 @@ def launch_connect_follow_up_campaign(
     logger.info(f"Loaded {len(profiles):,} profiles from CSV – ready for battle!")
 
     start_campaign(handle, session, profiles, enrich_only=enrich_only, limit=limit)
+    
+    # Gracefully shut down the browser to prevent Node EPIPE broken pipe crash at exit
+    try:
+        session.close()
+    except Exception as e:
+        logger.debug(f"Error closing session: {e}")
 
 
 def checkpoint(handle: str):
     """
     Open the browser and stay open for manual login/verification.
     """
-    session = get_session(handle=handle)
-    session.ensure_browser()
-    logger.info(colored(f"🚀 Checkpoint active for @{handle}. Use VNC (localhost:5900) to login if needed.", "green", attrs=["bold"]))
+    from linkedin.navigation.login import manual_login_checkpoint
     
-    import time
-    try:
-        while True:
-            time.sleep(1)
-            # Check if browser is still open? 
-            # For simplicity, we just hang until the process is killed by the user
-    except KeyboardInterrupt:
-        logger.info("Checkpoint closed.")
+    success = manual_login_checkpoint(handle)
+    if success:
+        logger.info(colored(f"✅ Checkpoint complete for @{handle}", "green", attrs=["bold"]))
+    else:
+        logger.error(colored(f"❌ Checkpoint failed for @{handle}", "red", attrs=["bold"]))

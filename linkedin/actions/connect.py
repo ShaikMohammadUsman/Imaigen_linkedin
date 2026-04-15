@@ -74,13 +74,17 @@ def _check_weekly_invitation_limit(session):
 def _connect_direct(session):
     session.wait()
     top_card = get_top_card(session)
-    # Broadly search for any Connect button
-    direct = session.page.locator(
+    # Broadly search for any Connect button strictly within the top card using aria-labels (what worked previously)
+    direct = top_card.locator(
         'button[aria-label*="Invite"]:visible, '
         'button[aria-label*="to connect"]:visible, '
         'button[aria-label^="Connect with"]:visible, '
         'button:text-is("Connect"):visible'
     ).first
+    
+    # Fallback to the broad keyword extractor if the strict aria-labels failed
+    if direct.count() == 0:
+        direct = top_card.locator('button').filter(has_text="Connect").first
     
     if direct.count() == 0:
         return False
@@ -102,17 +106,25 @@ def _connect_via_more(session):
     # Fallback: More → Connect
     more = top_card.locator(
         'button[id*="overflow"]:visible, '
-        'button[aria-label*="More actions"]:visible'
+        'button[aria-label*="More actions"]:visible, '
+        'button[aria-label^="More"]:visible, '
+        'button:has-text("More"):visible'
     )
     if more.count() == 0:
         return False
     more.first.click()
 
     session.wait()
-
-    connect_option = top_card.locator(
-        'div[role="button"][aria-label^="Invite"][aria-label*=" to connect"]'
+    # First, use the exact XPath that proved successful previously
+    connect_option = session.page.locator(
+        'xpath=//*[contains(@class, "dropdown") or @role="menu" or contains(@class, "menu")]//*[normalize-space(text())="Connect" or normalize-space(text())="Invite to connect" or normalize-space(text())="Personalize"]'
     )
+    
+    # If the strict XPath fails, fallback to the ultra-forgiving keyword extractor
+    if connect_option.count() == 0:
+        connect_option = session.page.locator(
+            '.artdeco-dropdown__content:visible, [role="menu"]:visible, .pvs-overflow-menu:visible'
+        ).locator('div, span, button').filter(has_text="Connect").last
     if connect_option.count() == 0:
         return False
     connect_option.first.click()
@@ -146,13 +158,17 @@ def _perform_send_invitation_with_note(session, message: str):
     session.wait()
     top_card = get_top_card(session)
 
-    # 1. Broadly search for any button that looks like a Connect/Invite button on the whole page
-    direct = session.page.locator(
+    # 1. Broadly search for any Connect button using aria-labels (what worked previously)
+    direct = top_card.locator(
         'button[aria-label*="Invite"]:visible, '
         'button[aria-label*="to connect"]:visible, '
         'button[aria-label^="Connect with"]:visible, '
         'button:text-is("Connect"):visible'
     ).first
+    
+    # Fallback to broad keyword extraction
+    if direct.count() == 0:
+        direct = top_card.locator('button').filter(has_text="Connect").first
     
     if direct.count() > 0:
         logger.debug("Found explicit Connect button. Clicking it.")
@@ -161,22 +177,39 @@ def _perform_send_invitation_with_note(session, message: str):
         logger.debug("No direct Connect button found. Trying 'More' dropdown...")
         more = top_card.locator(
             'button[id*="overflow"]:visible, '
-            'button[aria-label*="More actions"]:visible'
+            'button[aria-label*="More actions"]:visible, '
+            'button[aria-label^="More"]:visible, '
+            'button:has-text("More"):visible'
         )
         if more.count() == 0:
             logger.warning("Abort: Neither 'Connect' nor 'More' buttons were found on the profile.")
             return False
         more.first.click()
         session.wait()
+        session.wait()
+        # Use the exact XPath first
+        connect_option = session.page.locator(
+            'xpath=//*[contains(@class, "dropdown") or @role="menu" or contains(@class, "menu")]//*[normalize-space(text())="Connect" or normalize-space(text())="Invite to connect" or normalize-space(text())="Personalize"]'
+        )
         
-        connect_option = top_card.locator('div[role="button"][aria-label^="Invite"][aria-label*=" to connect"]')
+        # Fallback to broad keyword extraction
+        if connect_option.count() == 0:
+            connect_option = session.page.locator(
+                '.artdeco-dropdown__content:visible, [role="menu"]:visible, .pvs-overflow-menu:visible'
+            ).locator('div, span, button').filter(has_text="Connect").last
+
         if connect_option.count() == 0:
             logger.warning("Abort: 'More' was clicked, but there was no 'Connect' option inside the dropdown.")
             return False
         connect_option.first.click()
 
     session.wait()
-    add_note_btn = session.page.locator('button:has-text("Add a note"), button[aria-label*="Add a note"]')
+    add_note_btn = session.page.locator(
+        'button:has-text("Add a note"), '
+        'button[aria-label*="Add a note"], '
+        'button:has-text("Personalize"), '
+        'button[aria-label*="Personalize"]'
+    )
     if add_note_btn.count() == 0:
         logger.info(colored("⚠️ LinkedIn restricted custom notes for this account (Limit Reached or Privacy Settings).", "yellow", attrs=["bold"]))
         logger.info("Attempting a clean, raw connection request instead...")
@@ -185,19 +218,35 @@ def _perform_send_invitation_with_note(session, message: str):
         send_without_note = session.page.locator('button:has-text("Send without a note")')
         if send_without_note.count() > 0:
             logger.info("Falling back to 'Send without a note'. Job pitch will wait until they accept.")
-            send_without_note.first.click(force=True)
+            send_without_note.first.evaluate("node => node.click()")
             session.wait()
             return True
             
         # Fallback 2: Direct 'Send' button (if it's the only one left on the modal)
-        send_bare = session.page.locator('button[aria-label*="Send invitation"], button:has-text("Send"):visible')
+        send_bare = session.page.locator(
+            'button[aria-label*="Send invitation"], '
+            'button:has-text("Send"):visible, '
+            'button:has-text("Send now"):visible'
+        )
         if send_bare.count() > 0:
             logger.info("Falling back to raw 'Send' button. Job pitch will wait until they accept.")
-            send_bare.first.click(force=True)
+            send_bare.first.evaluate("node => node.click()")
             session.wait()
             return True
 
-        logger.warning("Abort: The connection modal opened, but no 'Add a note' or 'Send' button was found.")
+        # Fallback 3: Did LinkedIn instantly send the request without a modal?
+        pending_btn = session.page.locator('button:text-is("Pending"), button[aria-label*="Pending"]')
+        if pending_btn.count() > 0:
+            logger.warning(colored("🚨 ACCOUNT LIMIT ALERT: This account has exhausted its free custom notes quota! LinkedIn blocked the note.", "yellow", attrs=["bold"]))
+            logger.info("✅ SUCCESS (Fallback): Sent raw connection request instead. The Job Pitch will be sent via DM after they accept.")
+            return True
+
+        try:
+            dialog_text = session.page.locator('div[role="dialog"]').first.inner_text().replace('\n', ' ')
+            logger.warning(f"Abort: The connection modal opened, but no 'Add a note' or 'Send' button was found. Modal text: '{dialog_text[:300]}'")
+            session.page.screenshot(path="debug_modal.png")
+        except:
+            logger.warning("Abort: The connection modal opened, but no buttons were found and could not read modal text.")
         return False
         
     add_note_btn.first.click()

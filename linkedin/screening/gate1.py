@@ -29,7 +29,11 @@ CITY_NORMALIZE = {
 }
 
 def normalize_city(city: str) -> str:
-    return CITY_NORMALIZE.get(city.lower().strip(), city.lower().strip())
+    c = city.lower().strip()
+    for suffix in [" division", " region", " area", " metropolitan", " city"]:
+        if c.endswith(suffix):
+            c = c[:-len(suffix)].strip()
+    return CITY_NORMALIZE.get(c, c)
 
 
 # ─── Gate 1 Check Functions (exact copy) ─────────────────────────────
@@ -98,7 +102,15 @@ def check_work_authorization(role_location: list, candidate_auth: Optional[str])
 
 def run_gate1_structured(application_form: ApplicationFormAnswers, role_profile: dict) -> dict:
     stage1    = role_profile.get("stage1", {})
-    exp_range = stage1.get("experience_range", {"min": 0, "max": 10, "buffer": 1})
+    
+    # Support both flat and nested experience config
+    exp_range = stage1.get("experience_range", {})
+    if not exp_range:
+        exp_range = {
+            "min": stage1.get("min_experience", 0),
+            "max": stage1.get("max_experience", 10),
+            "buffer": 1
+        }
 
     checks = {
         "location":           check_location(application_form.current_city,

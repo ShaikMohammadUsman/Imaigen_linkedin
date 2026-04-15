@@ -96,6 +96,7 @@ def get_account_config(handle: str) -> Dict[str, Any]:
         "active": acct.get("active", True),
         "username": acct.get("username"),
         "password": acct.get("password"),
+        "is_premium": acct.get("is_premium", False),
         "subscribe_newsletter": acct.get("subscribe_newsletter", None),
         "booking_link": acct.get("booking_link"),
 

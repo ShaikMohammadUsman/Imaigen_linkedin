@@ -1,5 +1,5 @@
-# campaigns/connect_follow_up.py
 import logging
+import sys
 import random
 
 from termcolor import colored
@@ -18,6 +18,8 @@ logger = logging.getLogger(__name__)
 message_status_to_state = {
     MessageStatus.SENT: ProfileState.COMPLETED,
     MessageStatus.SKIPPED: ProfileState.CONNECTED,
+    MessageStatus.SKIPPED_NOT_CONNECTED: ProfileState.ENRICHED,
+    MessageStatus.FALLBACK_PENDING: ProfileState.PENDING,
 }
 
 
@@ -69,7 +71,7 @@ def process_profile_row(
         
         # --- Metadata Override (Priority: Newest CSV Data) ---
         # Crucial fix: ALWAYS use the most recent Role, Company, etc. from the CSV to avoid reusing data from an old job.
-        for key in ["role_name", "company_name", "app_link", "location", "compensation"]:
+        for key in ["role_name", "company_name", "app_link", "location", "compensation", "note"]:
             if key in simple_profile and simple_profile[key]:
                 profile[key] = simple_profile[key]
         
@@ -98,7 +100,24 @@ def process_profile_row(
 
     new_state = None
     match current_state:
-        case ProfileState.COMPLETED | ProfileState.FAILED:
+        case ProfileState.COMPLETED:
+            if enrich_only:
+                return None, current_state
+                
+            # 🛡️ CONNECTION HEALING: 
+            # If the candidate was previously 'COMPLETED' for this job, but the connection 
+            # is now gone (e.g. manually removed), we allow a re-outreach attempt.
+            logger.info(f"🧐 {public_identifier} is marked as COMPLETED. Re-verifying connection status...")
+            actual_status = get_connection_status(session, profile)
+            
+            if actual_status == ProfileState.ENRICHED:
+                logger.info(colored(f"🔄 Connection lost for {public_identifier}. Resetting to ENRICHED for re-outreach.", "yellow", attrs=["bold"]))
+                set_profile_state(session, public_identifier, ProfileState.ENRICHED.value)
+                return profile, ProfileState.ENRICHED
+            
+            return None, current_state
+
+        case ProfileState.FAILED:
             return None, current_state
 
         case ProfileState.DISCOVERED:
@@ -114,7 +133,7 @@ def process_profile_row(
                     set_profile_state(session, public_identifier, new_state.value)
                     return None, new_state
 
-        case ProfileState.ENRICHED:
+        case ProfileState.ENRICHED | ProfileState.SCREENED:
             if enrich_only:
                 logger.info(f"Skipping {public_identifier} (Already Enriched & Enrich Mode ON)")
                 return None, current_state
@@ -131,19 +150,32 @@ def process_profile_row(
                     if template_file:
                         logger.info(f"🎨 Generating AI connection note for {public_identifier}...")
                         note = render_template(session, template_file, template_type, profile, include_link=True)
-                        # Ensure it's not too long for LinkedIn tier limit (200 chars)
-                        if len(note) > 195:
-                            note = note[:192] + "..."
+                        # Ensure it's not too long for LinkedIn tier limit (300 chars)
+                        if len(note) > 295:
+                            note = note[:150] + "..."
                         profile['note'] = note
+                        logger.info(colored(f"📝 Custom AI Note generated for {public_identifier}.", "green"))
                 except Exception as e:
                     logger.error(f"Failed to generate AI connection note for {public_identifier}: {e}")
+            else:
+                logger.info(colored(f"📩 Using provided custom note for {public_identifier}.", "cyan"))
+            
+            # --- Fallback opening details if no AI template provided ---
+            if not profile.get('note'):
+                role = profile.get('role_name', 'an open role')
+                company = profile.get('company_name', 'our company')
+                fallback = f"Hi there! I noticed your impressive background and wanted to reach out regarding the {role} position at {company}. Let's connect!"
+                if len(fallback) > 295:
+                    fallback = fallback[:292] + "..."
+                profile['note'] = fallback
+                logger.info(colored(f"💡 Using fallback connection note for {public_identifier}.", "yellow"))
             
             new_state = send_connection_request(handle=handle, profile=profile)
             profile = profile if new_state == ProfileState.CONNECTED else None
         case ProfileState.PENDING:
             if enrich_only: return None, current_state
             new_state = get_connection_status(session, profile)
-            profile = profile if new_state == ProfileState.CONNECTED else None
+            profile = profile if new_state in [ProfileState.CONNECTED, ProfileState.ENRICHED] else None
             
             # 🧬 If they just accepted, sync their thread to see if they sent a "Hello" or "Accepted" message
             if new_state == ProfileState.CONNECTED and profile:
@@ -179,8 +211,9 @@ def process_profile_row(
             new_state = message_status_to_state.get(status, ProfileState.CONNECTED)
             profile = profile if status == MessageStatus.SENT else None
             
-            if status == MessageStatus.SENT:
-                save_message_sent(session, public_identifier, msg_text, job_id=simple_profile.get('job_id'))
+            if status in [MessageStatus.SENT, MessageStatus.FALLBACK_PENDING]:
+                if status == MessageStatus.SENT:
+                    save_message_sent(session, public_identifier, msg_text, job_id=simple_profile.get('job_id'))
                 session.wait(long_pause=True)  # <-- IMPORTANT: Long pause after sending message
 
         case _:
@@ -188,10 +221,8 @@ def process_profile_row(
 
     set_profile_state(session, public_identifier, new_state.value)
     
-    # 🩹 Job ID Healing check for the return
-    if incoming_job_id:
-         profile['job_id'] = incoming_job_id if profile else None
-
+    msg = f"🏁 Result: {public_identifier} → {new_state.value}"
+    logger.info(colored(msg, "blue", attrs=["bold"]))
     return profile, new_state
 
 
@@ -217,10 +248,14 @@ def process_profiles(handle, session, profiles: list[dict], enrich_only: bool = 
     for simple_profile in profiles:
         public_identifier = simple_profile.get("public_identifier", "Unknown")
         
+        # 🧪 DETAILED ACTION LOGGING
+        msg = f"🚀 [CAMPAIGN ACTION] Starting outreach for candidate: {public_identifier}"
+        logger.info(colored(msg, "cyan", attrs=["bold"]))
+        
         # 🔬 INSPECTING CSV DATA
         incoming_job_id = simple_profile.get('job_id')
         role_name = simple_profile.get('role_name')
-        logger.info(colored(f"🔬 INSPECTING CSV DATA: ID={incoming_job_id}, Role={role_name} for {public_identifier}", "cyan"))
+        logger.info(f"📋 Candidate Context | Role: {role_name} | Job ID: {incoming_job_id}")
 
         # Check overall daily & monthly safety (persisted)
         if not tracker.check_safety(handle, "enrich_profiles", "enrich_profiles"):
@@ -241,6 +276,8 @@ def process_profiles(handle, session, profiles: list[dict], enrich_only: bool = 
             break
             
         logger.info(colored(f"🔍 [ITERATION START] Beginning processing loop for: {public_identifier}", "magenta"))
+        logger.info(f"🌐 Navigating to profile: {simple_profile.get('url')}")
+        sys.stdout.flush()
 
         continue_same_profile = True
         # 🚀 Two-Step Flow: We allow up to 2 state transitions per profile (to go from Scraped -> Connected -> Messaged)
@@ -271,7 +308,7 @@ def process_profiles(handle, session, profiles: list[dict], enrich_only: bool = 
                  
                  invitation_sent = (new_state == ProfileState.PENDING)
                  message_sent = (profile_in_turn is None and new_state == ProfileState.CONNECTED and not enrich_only)
-                 enrichment_done = (new_state == ProfileState.ENRICHED and enrich_only)
+                 enrichment_done = (new_state in [ProfileState.ENRICHED, ProfileState.SCREENED] and enrich_only)
                  
                  should_increment = invitation_sent or message_sent or enrichment_done
                  
@@ -279,6 +316,8 @@ def process_profiles(handle, session, profiles: list[dict], enrich_only: bool = 
                       actions_count += 1
                       session.profiles_scraped_this_batch += 1
                       tracker.increment(handle, "enrich_profiles")
+                      if invitation_sent:
+                          tracker.increment(handle, "connection_requests")
                       tracker.record_health_event(handle, "success")
                       
                       update_job_progress(session.db_session, job_id, actions_count)
@@ -301,16 +340,23 @@ def process_profiles(handle, session, profiles: list[dict], enrich_only: bool = 
                           session.db_session.rollback()
                       
                       logger.info(f"Action count: {actions_count}/{limit}")
+                      sys.stdout.flush()
 
                  # If we actually finished the turn for this person, break the while loop and move to next CSV row.
                  if profile_in_turn is None or should_increment:
+                      status_emoji = "✅" if should_increment else "⏭️"
+                      action_type = "Invitation Sent" if invitation_sent else ("Message Sent" if message_sent else "Enriched")
+                      msg = f"{status_emoji} Finalized {public_identifier}: {action_type}" if should_increment else f"{status_emoji} Handled {public_identifier} (Skipped/Existing)"
+                      logger.info(colored(msg, "green" if should_increment else "cyan", attrs=["bold"]))
+                      sys.stdout.flush()
                       break
         except SkipProfile as e:
-            public_identifier = simple_profile["public_identifier"]
+            public_identifier = simple_profile.get("public_identifier", "Unknown")
             logger.info(
                 colored(f"Skipping profile: {public_identifier} reason: {e}", "red", attrs=["bold"])
             )
-            save_page(session, simple_profile)
+            save_page(session, { 'public_identifier': public_identifier })
+            sys.stdout.flush()
         except ReachedConnectionLimit as e:
             perform_connections = False
             public_identifier = simple_profile["public_identifier"]
@@ -342,8 +388,9 @@ def process_profiles(handle, session, profiles: list[dict], enrich_only: bool = 
             logger.error(f"Timeout processing {simple_profile['public_identifier']}: {e}")
             tracker.record_health_event(handle, "timeout", details=str(e))
         except Exception as e:
-            logger.error(f"Unexpected failure for {simple_profile['public_identifier']}: {e}", exc_info=True)
+            logger.error(f"Unexpected failure for {simple_profile.get('public_identifier', 'Unknown')}: {e}", exc_info=True)
             tracker.record_health_event(handle, "unknown_failure", details=str(e))
+            sys.stdout.flush()
 
     try:
         end_job(session.db_session, job_id, stop_status, error_msg)

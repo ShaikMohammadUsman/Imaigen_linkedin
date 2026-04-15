@@ -35,6 +35,10 @@ SAFETY_CONFIG = {
         "batch_pause_after": (3, 4),
         "batch_pause_duration": (180, 420)
     },
+    "connection_requests": {
+        "monthly_target_range": (300, 600),
+        "weekly_target_range": (80, 150),
+    },
     "harvest_session": {
         "max_pages_per_run": 6,
         "random_range": (2, 6)
@@ -319,9 +323,25 @@ class UsageTracker:
                 logger.info(colored(f"🔒 [MATURITY] Account age: {days_active} days (WARM-UP). Safe range: {config['week_1_2_range']}. Dynamic Limit: {limit} cards.", "yellow"))
                 return limit
             
-        elif metric_category == "enrich_profiles":
-            limit = rng.randint(*config["daily_normal"])
-            return min(limit, config["hard_cap"])
+        elif metric_category in ["enrich_profiles", "connection_requests"]:
+            # Enforce Free vs Premium Limits dynamically
+            from linkedin.conf import get_account_config
+            try:
+                acct_config = get_account_config(handle)
+                is_premium = acct_config.get("is_premium", False)
+            except Exception:
+                is_premium = False
+
+            if is_premium:
+                limit = rng.randint(22, 26)  # Premium: max 26
+                if metric_category == "connection_requests":
+                    logger.info(colored(f"💎 [LIMITS] Account {handle} is Premium. Connection Limit set to [{limit}].", "magenta"))
+            else:
+                limit = rng.randint(9, 12)   # Free: max 12
+                if metric_category == "connection_requests":
+                    logger.info(colored(f"🆓 [LIMITS] Account {handle} is Free Basic. Connection Limit set to [{limit}].", "yellow"))
+                
+            return limit
             
         return 0
 

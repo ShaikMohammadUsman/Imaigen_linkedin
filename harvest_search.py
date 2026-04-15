@@ -432,6 +432,12 @@ def harvest_search_results(
 
     logger.info(f"Harvesting complete! Saved {len(collected_urls)} URLs to {output_path}")
 
+    # Gracefully shut down the browser to prevent Node EPIPE broken pipe crash at exit
+    try:
+        session.close()
+    except Exception as e:
+        logger.debug(f"Error closing session: {e}")
+
 if __name__ == "__main__":
     if len(sys.argv) < 3:
         print("Usage: python harvest_search.py <handle> <search_url> [start_page] [pages] [job_id] [role_name] [company] [link] [loc] [comp] [source]")

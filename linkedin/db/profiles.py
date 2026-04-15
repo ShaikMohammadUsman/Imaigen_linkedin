@@ -252,6 +252,8 @@ def set_profile_state(session: "AccountSession", public_identifier, new_state: s
             log_msg = colored("DISCOVERED", "green")
         case ProfileState.ENRICHED:
             log_msg = colored("ENRICHED", "yellow", attrs=["bold"])
+        case ProfileState.SCREENED:
+            log_msg = colored("SCREENED", "magenta", attrs=["bold"])
         case ProfileState.PENDING:
             log_msg = colored("PENDING", "yellow", attrs=["bold"])
         case ProfileState.CONNECTED:
